@@ -1,0 +1,8 @@
+# config.toml
+project_id = "jpmlcooyxbsihzbmgytu"
+
+[functions.generate-cleaning-tasks]
+enabled = true
+verify_jwt = true
+import_map = "./functions/import_map.json"
+entrypoint = "./functions/generate-cleaning-tasks/index.ts"
