@@ -1,4 +1,4 @@
-import type { ActivityLog } from '../../../src/types/activity-logs.ts';
+import type { ActivityLog } from '../../../src/generated-types/activity-logs.js';
 
 export function convertLogsToCSV(logs: ActivityLog[]): string {
   const headers = ['ID', 'Type', 'Title', 'Details', 'Created At', 'Created By'];

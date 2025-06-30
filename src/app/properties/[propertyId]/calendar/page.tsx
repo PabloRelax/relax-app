@@ -4,16 +4,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database, Tables } from '../../../../types/supabase.ts';
+import type { Database, Tables } from 'types/supabase';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import type { User } from '@supabase/supabase-js';
 import type { View } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import DashboardLayout from '../../../../components/DashboardLayout.tsx';
-import PropertyDetailPageLayout from '../../../../components/PropertyDetailPageLayout.tsx';
-import type { PropertyWithClient } from '../../../../types/supabase.ts';
-import { getPropertyNavigationItems } from '../../../../../supabase/functions/utils/getPropertyNavigation.tsx';
+import DashboardLayout from '../../../../components/DashboardLayout';
+import PropertyDetailPageLayout from '../../../../components/PropertyDetailPageLayout';
+import type { PropertyWithClient } from 'src/generated-types/customTypes';
+import { getPropertyNavigationItems } from '../../../../../supabase/functions/utils/getPropertyNavigation';
+import CreateTaskDrawer from '../../../../components/CreateTaskDrawer';
 
 
 type Reservation  = Tables<'reservations'>;
@@ -71,6 +72,8 @@ export default function PropertyCalendarPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<View>('month');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [showDrawer, setShowDrawer] = useState(false);
+
 
   useEffect(() => {
     async function loadCalendarData() {
@@ -227,7 +230,9 @@ reservations.forEach(res => {
     cleaningTasks.forEach(task => {
       calendarEvents.push({
         id: `task-${task.id}`,
-        title: task.priority_tag || 'Clean',
+        title: task.task_type === 'Clean'
+          ? `Clean – ${task.priority_tag || 'N/A'}`
+          : task.task_type,
         start: new Date(task.scheduled_date),
         end:   new Date(task.scheduled_date),
         allDay: true,
@@ -280,11 +285,20 @@ reservations.forEach(res => {
         navigationItems={getPropertyNavigationItems(property.id, 'calendar')}
       >
         <div className="p-8">
-          <h1 className="text-3xl font-bold mb-6">
-            {property
-              ? `Calendar - ${property.client_property_nickname ? `${property.client_property_nickname} - ` : ''}${property.short_address}`
-              : `Calendar for Property ${propertyId}`}
-          </h1>
+          <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+            <h1 className="text-3xl font-bold">
+              {property
+                ? `Calendar - ${property.client_property_nickname ? `${property.client_property_nickname} - ` : ''}${property.short_address}`
+                : `Calendar for Property ${propertyId}`}
+            </h1>
+            <button
+              type="button"
+              onClick={() => setShowDrawer(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+            >
+              Create New Task
+            </button>
+          </div>
           <div className="bg-white p-6 rounded-lg shadow-md" style={{ height: '800px' }}>
             <Calendar
               localizer={localizer}
@@ -315,6 +329,22 @@ reservations.forEach(res => {
             />
           </div>
         </div>
+        {showDrawer && property && (
+          <CreateTaskDrawer
+            defaultProperty={property} // 👈 prefilled and locked
+            onClose={() => setShowDrawer(false)}
+            onCreated={async () => {
+              setShowDrawer(false);
+              const { data } = await supabase
+                .from('cleaning_tasks')
+                .select('*, properties(short_address, client_property_nickname)')
+                .eq('property_id', property.id)
+                .order('scheduled_date', { ascending: false });
+
+              if (data) setCleaningTasks(data);
+            }}
+          />
+        )}
       </PropertyDetailPageLayout>
     </DashboardLayout>
   );

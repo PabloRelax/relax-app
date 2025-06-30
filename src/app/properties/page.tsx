@@ -1,13 +1,14 @@
 // src/app/properties/page.tsx
 'use client'
 
+import Link from 'next/link'
 import { type User } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import type { Database, Tables } from '../../types/supabase.ts'
+import type { Database, Tables } from 'types/supabase'
 
-import DashboardLayout from '../../components/DashboardLayout.tsx';
+import DashboardLayout from '../../components/DashboardLayout';
 // We won't use PropertyDetailPanel directly here, as clicking will navigate to a new page.
 // import PropertyDetailPanel from '@/components/PropertyDetailPanel'; // Not needed here
 
@@ -25,6 +26,7 @@ export default function PropertiesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPropertiesForBulk, setSelectedPropertiesForBulk] = useState<number[]>([]); // For checkboxes
   const router = useRouter()
+  const [syncingAll, setSyncingAll] = useState(false);
 
   useEffect(() => {
     async function loadUserAndProperties() {
@@ -107,17 +109,28 @@ export default function PropertiesPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center justify-between mb-2">
         <h1 className="text-2xl font-bold">Manage Properties</h1>
         <button
           type="button"
           onClick={handleCreateNewProperty}
-          className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-600 transition-colors"
+          className="bg-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-orange-600 transition-colors"
         >
           Create New Property
         </button>
       </div>
-      
+
+      {/* Quick Access Link - moved below the h1 */}
+      <div className="mb-6">
+        {/* @ts-ignore Deno doesn't recognize next/link as a JSX component */}
+        <Link
+          href="/properties/quick-access"
+          className="inline-block p-4 border border-gray-300 rounded-lg shadow-sm hover:shadow-md hover:border-blue-500 transition"
+        >
+          ⏩ Quick Access
+        </Link>
+      </div>
+    
       {/* Filter Buttons */}
       <div className="mb-4 flex gap-2">
         <button
@@ -134,6 +147,34 @@ export default function PropertiesPage() {
         >
           Show All
         </button>
+        <button
+          className="inline-block p-4 border border-gray-300 rounded-lg shadow-sm hover:shadow-md hover:border-blue-500 transition"
+          onClick={async () => {
+            const confirm = window.confirm('Are you sure you want to sync all iCals and generate tasks? This may take a few minutes.');
+            if (!confirm) return;
+
+            setSyncingAll(true);
+
+            try {
+              const response = await fetch('/api/sync-ical-all');
+              const result = await response.json();
+
+              if (!response.ok) {
+                console.error('❌ Sync all iCals failed:', result?.error);
+                alert(`Failed to sync iCals: ${result?.error}`);
+              } else {
+                console.log('✅ Sync results:', result.results);
+                alert(`Sync complete. See console for details.`);
+              }
+            } catch (err: any) {
+              console.error('❌ Error syncing all iCals:', err.message);
+              alert('An error occurred during sync. See console.');
+              setSyncingAll(false);
+            }
+          }}
+        >
+          🔄
+        </button>
       </div>
 
       {/* Search Input Field */}
@@ -149,6 +190,25 @@ export default function PropertiesPage() {
       <p className="text-lg font-medium mb-4">
         Currently displaying {filteredProperties.length} {filter === 'active' ? 'active' : 'total'} properties.
       </p>
+      {syncingAll && (
+        <div className="flex items-center gap-2 mt-4 text-blue-600">
+          <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
+            <circle
+              className="opacity-25"
+              cx="12" cy="12" r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+              fill="none"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            />
+          </svg>
+          <span>Syncing all iCals... This may take a few minutes.</span>
+        </div>
+      )}
 
       {/* Bulk Actions Button (visible if properties are selected) */}
       {selectedPropertiesForBulk.length > 0 && (

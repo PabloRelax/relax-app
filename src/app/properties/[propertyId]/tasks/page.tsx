@@ -3,12 +3,14 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from '../../../../types/supabase.ts';
-import PropertyDetailPageLayout from '../../../../components/PropertyDetailPageLayout.tsx';
-import DashboardLayout from '../../../../components/DashboardLayout.tsx';
-import { getPropertyNavigationItems } from '../../../../../supabase/functions/utils/getPropertyNavigation.tsx';
+import type { Database } from 'types/supabase';
+import PropertyDetailPageLayout from '../../../../components/PropertyDetailPageLayout';
+import DashboardLayout from '../../../../components/DashboardLayout';
+import { getPropertyNavigationItems } from '../../../../../supabase/functions/utils/getPropertyNavigation';
 import { useState, useEffect, useRef } from 'react';
-import type { PropertyWithClient } from '../../../../types/supabase.ts';
+import type { PropertyWithClient } from 'src/generated-types/customTypes';
+import CreateTaskDrawer from '../../../../components/CreateTaskDrawer';
+
 
 type CleaningTask = Database['public']['Tables']['cleaning_tasks']['Row'];
 
@@ -61,6 +63,7 @@ export default function PropertyTasksPage() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedCleaners, setSelectedCleaners] = useState<string[]>([]);  
+  const [showDrawer, setShowDrawer] = useState(false);
     const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
         task.task_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -145,6 +148,7 @@ export default function PropertyTasksPage() {
   if (!property) return <p className="p-8 text-gray-600">Property not found.</p>;
 
   return (
+ 
     <DashboardLayout>
       <PropertyDetailPageLayout
         property={property}
@@ -167,7 +171,7 @@ export default function PropertyTasksPage() {
 
         <button
             type="button"
-            onClick={() => router.push(`/properties/${propertyId}/tasks/create`)}
+            onClick={() => setShowDrawer(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
         >
             Create New Task
@@ -340,6 +344,23 @@ export default function PropertyTasksPage() {
                 </tbody>
           </table>
         </div>
+      {showDrawer && property && (
+        <CreateTaskDrawer
+          defaultProperty={property} // 👈 prefilled and locked
+          onClose={() => setShowDrawer(false)}
+          onCreated={async () => {
+            setShowDrawer(false);
+            const { data } = await supabase
+              .from('cleaning_tasks')
+              .select('*, properties(short_address, client_property_nickname)')
+              .eq('property_id', property.id)
+              .order('scheduled_date', { ascending: false });
+
+            if (data) setTasks(data);
+          }}
+        />
+      )}
+
       </PropertyDetailPageLayout>
     </DashboardLayout>
   );

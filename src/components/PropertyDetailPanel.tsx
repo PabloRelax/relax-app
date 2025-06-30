@@ -1,8 +1,9 @@
 // src/components/PropertyDetailPanel.tsx
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import type { Tables } from '../types/supabase.ts';
+import React, { useEffect, useRef, useState } from 'react';
+import type { Tables } from 'types/supabase';
+
 
 // Define the type for a property row with joined client display name
 type PropertyWithClient = Tables<'properties'> & {
@@ -18,43 +19,85 @@ export default function PropertyDetailPanel({ property, onClose }: PropertyDetai
   const panelRef = useRef<HTMLDivElement>(null); // Ref to detect clicks outside the panel
 
   // NEW: handleSyncIcal function - place this inside the component function, before the return()
-  const handleSyncIcal = async (icalUrl: string, propertyId: number, platformUserId: string) => {
-    if (!icalUrl) {
-      alert('No iCal link available for this property.');
-      return;
-    }
-
-    alert('Syncing iCal... This may take a moment.'); // User feedback
+  const handleSyncIcal = async (propertyId: number, platformUserId: string) => {
+    alert('Syncing iCals... This may take a moment.');
 
     try {
-      const response = await fetch('/api/sync-ical', {
+      // Step 1: Fetch all active iCals for the property
+      const icalResponse = await fetch(`/api/property/${propertyId}/icals`);
+      if (!icalResponse.ok) {
+        const err = await icalResponse.json();
+        throw new Error(err.error || 'Failed to fetch iCals');
+      }
+
+      const { icals } = await icalResponse.json();
+      if (!icals || icals.length === 0) {
+        alert('No active iCal links found for this property.');
+        return;
+      }
+
+      // Step 2: Loop and sync each iCal
+      for (const ical of icals) {
+        try {
+          const response = await fetch('/api/sync-ical', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ical_url: ical.url,
+              property_id: propertyId,
+              platform_user_id: platformUserId,
+            }),
+          });
+
+          // Defensive parsing
+          let data;
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            const text = await response.text();
+            console.error('❌ Response is not valid JSON. Text content:', text);
+            alert('iCal sync failed: Response was not JSON. See console.');
+            continue;
+          }
+
+          if (!response.ok) {
+            console.error('❌ API returned error:', data.error);
+            alert(`Failed to sync iCal (${ical.url}): ${data.error || 'Unknown error'}`);
+          } else {
+            console.log('✅ Synced iCal:', ical.url);
+          }
+        } catch (error) {
+          console.error('❌ Sync failed with exception:', error);
+          alert(`Exception during iCal sync: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+
+      // Step 3: Generate cleaning tasks once after syncing all
+      const taskResponse = await fetch('/api/generate-cleaning-tasks', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ical_url: icalUrl,
-          property_id: propertyId,
-          platform_user_id: platformUserId,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ property_id: propertyId }),
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        alert(data.message || 'iCal synced successfully!');
-        // You might want to refresh the dashboard data here later
-        // onClose(); // Optionally close panel after sync
+      if (!taskResponse.ok) {
+        const errData = await taskResponse.json();
+        console.error('Cleaning task generation failed:', errData?.error);
+        alert('iCals synced, but task generation failed.');
       } else {
-        alert('iCal sync failed: ' + (data.error || 'Unknown error'));
-        console.error('iCal sync API response error:', data.error);
+        const taskData = await taskResponse.json();
+        console.log('Tasks generated:', taskData.message);
+        alert('iCals synced and tasks generated successfully!');
       }
     } catch (error) {
       const err = error as Error;
       alert('An error occurred during iCal sync: ' + err.message);
       console.error('iCal sync client error:', err);
     }
-  };  
+  };
+
+
 
   useEffect(() => {
     // Function to handle clicks outside the panel
@@ -109,6 +152,20 @@ export default function PropertyDetailPanel({ property, onClose }: PropertyDetai
             return val !== null && val !== undefined && String(val).trim() !== '' && !(typeof val === 'number' && val === 0);
         });
     };
+
+  const [hasIcal, setHasIcal] = useState(false);
+
+  useEffect(() => {
+    async function checkIcal() {
+      const res = await fetch(`/api/property/${property.id}/has-ical`);
+      if (res.ok) {
+        const { hasIcal: result } = await res.json();
+        setHasIcal(result);
+      }
+    }
+
+    checkIcal();
+  }, [property.id]);
 
   return (
     <div
@@ -204,11 +261,10 @@ export default function PropertyDetailPanel({ property, onClose }: PropertyDetai
       <DetailRow label="General Comments" value={property.general_comments} />
       <DetailRow label="Comments for Clients" value={property.comments_for_clients} />
           {/* NEW: Sync iCal Button - place it here within the OTHER section */}
-          {property.ical && ( // Only show button if iCal link exists for the property
+          {hasIcal && (
             <button
               type="button"
-              onClick={() => handleSyncIcal(property.ical!, property.id, property.platform_user_id)} // Added '!' after property.ical
-
+              onClick={() => handleSyncIcal(property.id, property.platform_user_id)}
               className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition-colors text-sm"
             >
               Sync iCal

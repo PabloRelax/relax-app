@@ -5,11 +5,11 @@ import { usePathname } from 'next/navigation'
 import {
   ArrowLeftIcon,
 } from '@heroicons/react/24/outline'
-import type { PropertyWithClient } from '../types/supabase.ts';
+import type { PropertyWithClient } from 'src/generated-types/customTypes';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from '../types/supabase.ts';
+import type { Database } from 'types/supabase';
 
 interface PropertyDetailPageLayoutProps {
   children: React.ReactNode;

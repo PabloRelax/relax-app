@@ -3,13 +3,13 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from '../../../../types/supabase.ts';
-import PropertyDetailPageLayout from '../../../../components/PropertyDetailPageLayout.tsx'; // Update path as needed
-import DashboardLayout from '../../../../components/DashboardLayout.tsx'; // Import the layout component
-import type { PropertyWithClient } from '../../../../types/supabase.ts';
-import { getPropertyNavigationItems } from '../../../../../supabase/functions/utils/getPropertyNavigation.tsx';
-import type { ActivityLog } from '../../../../types/activity-logs.ts';
-import { convertLogsToCSV } from '../../../../../supabase/functions/utils/export.ts';
+import type { Database } from 'types/supabase';
+import PropertyDetailPageLayout from '../../../../components/PropertyDetailPageLayout'; // Update path as needed
+import DashboardLayout from '../../../../components/DashboardLayout'; // Import the layout component
+import type { PropertyWithClient } from 'src/generated-types/customTypes';
+import { getPropertyNavigationItems } from '../../../../../supabase/functions/utils/getPropertyNavigation';
+import type { ActivityLog } from '../../../../generated-types/activity-logs';
+import { convertLogsToCSV } from '../../../../../supabase/functions/utils/export';
 import { useState, useEffect, useRef } from 'react';
 
 

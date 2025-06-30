@@ -5,8 +5,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from '../../types/supabase.ts';
-import DashboardLayout from '../../components/DashboardLayout.tsx';
+import type { Database } from 'types/supabase';
+import DashboardLayout from '../../components/DashboardLayout';
 
 type Client = Database['public']['Tables']['clients']['Row'];
 

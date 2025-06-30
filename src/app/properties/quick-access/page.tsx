@@ -1,15 +1,16 @@
-// src/app/dashboard/page.tsx
+// src/app/properties/quick-acces/page.tsx
 'use client'
 
+import Link from 'next/link'
 import type { User } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import type { Database, Tables } from '../../types/supabase.ts'
+import type { Database, Tables } from 'types/supabase'
 
-import DashboardLayout from '../../components/DashboardLayout.tsx';
+import DashboardLayout from '../../../components/DashboardLayout';
 // IMPORT PropertyDetailPanel HERE
-import PropertyDetailPanel from '../../components/PropertyDetailPanel.tsx';
+import PropertyDetailPanel from '../../../components/PropertyDetailPanel';
 
 const supabase = createClientComponentClient<Database>()
 
@@ -84,6 +85,10 @@ export default function DashboardPage() {
     return searchContent.includes(searchTerm.toLowerCase());
   });
 
+  const handleCreateNewProperty = () => {
+    // TODO: Implement navigation to a "Create New Property" form page
+    alert('Implement navigation to Create New Property page!');
+  };
 
   if (loading) {
     return <p className="p-8">Loading dashboard layout...</p>;
@@ -95,8 +100,25 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <h1 className="text-3xl font-bold mb-6">Welcome, {user.email}!</h1>
-      <h2 className="text-2xl font-semibold mb-4">Your Properties:</h2>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-2xl font-bold">Quick Access</h1>
+        <button
+          type="button"
+          onClick={handleCreateNewProperty}
+          className="bg-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-orange-600 transition-colors"
+        >
+          Create New Property
+        </button>
+      </div>
+
+      {/* @ts-ignore Deno doesn't recognize next/link as a JSX component */}
+      <Link
+        href="/properties"
+        className="inline-block mb-4 p-4 border border-gray-300 rounded-lg shadow-sm hover:shadow-md hover:border-blue-500 transition"
+      >
+        ⬅️ Back to properties
+      </Link>
+
 
       {/* Filter Buttons */}
       <div className="mb-4 flex gap-2">

@@ -34,6 +34,17 @@ type DbCleaningTask = {
 };
 
 serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+      },
+    });
+  }
+
   if (req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 });
   }
@@ -58,14 +69,24 @@ serve(async (req: Request) => {
       console.error('Error fetching reservations:', reservationsError.message);
       return new Response(JSON.stringify({ error: 'Failed to fetch reservations' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+          }
       });
     }
 
     if (!reservations || reservations.length === 0) {
       return new Response(JSON.stringify({ message: 'No relevant confirmed reservations found ending today or in the future.' }), { // Mensaje actualizado
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+          }
       });
     }
 
@@ -89,8 +110,27 @@ serve(async (req: Request) => {
         .single();
 
       const priorityTag = nextReservation && !nextReservationError ? 'B2B' : 'Departure Clean';
-      const taskType = 'No TAG'; // Cambiado de 'No TAG' para mayor claridad (o 'Checkout Clean' como en tu propuesta)
+      const taskType = 'Clean';
+      
+      // 4. Check if a task already exists and is marked as Completed
+      const { data: existingTask, error: existingTaskError } = await supabaseClient
+        .from('cleaning_tasks')
+        .select('id, status')
+        .eq('reservation_id', reservation.id)
+        .eq('task_type', taskType)
+        .eq('scheduled_date', scheduledDateForTask)
+        .maybeSingle();
 
+      if (existingTaskError) {
+        console.warn(`Error checking existing task for reservation ${reservation.id}:`, existingTaskError.message);
+      }
+
+      // Skip updating if it's marked as Completed
+      if (existingTask?.status === 'Completed') {
+        console.log(`Skipping task for reservation ${reservation.id} - already marked as Completed`);
+        continue;
+      }       
+      
       // 5. Crear tarea para el día de checkout (sin agregar días)
       tasksToUpsert.push({
         property_id: reservation.property_id,
@@ -106,7 +146,13 @@ serve(async (req: Request) => {
     }
 
     if (tasksToUpsert.length === 0) {
-      return new Response(JSON.stringify({ message: 'No new tasks to generate or update for today onwards.' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ message: 'No new tasks to generate or update for today onwards.' }), { status: 200, headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+          }
+      });
     }
 
     // 6. Insertar/Actualizar tareas en lote
@@ -119,17 +165,35 @@ serve(async (req: Request) => {
 
     if (upsertError) {
       console.error('Error upserting cleaning tasks:', upsertError.message);
-      return new Response(JSON.stringify({ error: 'Failed to upsert cleaning tasks: ' + upsertError.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'Failed to upsert cleaning tasks: ' + upsertError.message }), { status: 500, headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+          }
+      });
     }
 
-    return new Response(JSON.stringify({ message: `Successfully generated/updated ${tasksToUpsert.length} cleaning tasks.` }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ message: `Successfully generated/updated ${tasksToUpsert.length} cleaning tasks.` }), { status: 200, headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+          } 
+    });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Edge Function error:', errorMessage);
     return new Response(
       JSON.stringify({ error: 'An unexpected error occurred: ' + errorMessage }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+          } 
+      }
     );
   }
 });

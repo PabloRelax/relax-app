@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { GeistSans } from 'geist/font/sans'; // Import from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'; // Import from 'geist/font/mono'
 import "./globals.css";
+import 'react-datepicker/dist/react-datepicker.css';
 
 // Assign GeistSans and GeistMono directly. They are already the font objects.
 // DO NOT call them as functions with {}

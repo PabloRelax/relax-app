@@ -2,17 +2,17 @@
 'use client';
 
 import Link from 'next/link';
-{/* @ts-expect-error Deno doesn't recognize Next.js's Link as a JSX component */}
 <Link href="/dashboard">Dashboard</Link>
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from '../types/supabase.ts';
+import type { Database } from 'types/supabase';
 import {
-  HomeIcon,
+  CalendarDaysIcon,
   BuildingOffice2Icon,
   PowerIcon,
   UsersIcon,
-  HandRaisedIcon
+  HandRaisedIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
 
@@ -33,14 +33,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const navItems = [
     {
-      name: 'Dashboard',
-      href: '/dashboard',
-      icon: HomeIcon,
+      name: 'Multiview',
+      href: '/multiview',
+      icon: CalendarDaysIcon,
     },
     {
       name: 'Properties',
       href: '/properties',
       icon: BuildingOffice2Icon,
+    },
+    {
+      name: 'Tasks',
+      href: '/tasks',
+      icon: CheckCircleIcon,
     },
     {
       name: 'Clients',

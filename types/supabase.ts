@@ -1,3 +1,5 @@
+// \types\supabase.ts
+
 export type Json =
   | string
   | number
@@ -6,72 +8,138 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type PropertyWithClient = {
-  id: number;
-  client_property_nickname?: string;
-  short_address?: string;
-  clients: {
-    display_name: string;
-  } | null;
-};
-
 export type Database = {
   public: {
-    Tables: {      
+    Tables: {
       cleaners: {
         Row: {
-          id: number;
-          platform_user_id: string;
-          active: boolean;
-          name: string | null;
-          display_name: string;
-          suburb: string | null;
-          abn: string | null;
-          bsb: string | null;
-          account_number: string | null;
-          registered_for_gst: boolean | null;
-          mobile: string | null;
-          email: string | null;
-          address: string | null;
-          calendar_colour: string | null;
-          key_ring_number: string | null;
-          cleaning_couple: string | null;
-          linen_storage_location: string | null;
-          cleaner_xero_name: string;
-          base_rate: number;
-          city: string;
-          general_comments: string | null;
-          weekly_updates: string | null;
-          hours_goal: number | null;
-          extra_comments: string | null;
-          mon_in: boolean | null;
-          mon_out: boolean | null;
-          tue_in: boolean | null;
-          tue_out: boolean | null;
-          wed_in: boolean | null;
-          wed_out: boolean | null;
-          thu_in: boolean | null;
-          thu_out: boolean | null;
-          fri_in: boolean | null;
-          fri_out: boolean | null;
-          sat_in: boolean | null;
-          sat_out: boolean | null;
-          sun_in: boolean | null;
-          sun_out: boolean | null;
-          created_at: string | null;
-          updated_at: string | null;
-        };
-        Insert: Partial<Database['public']['Tables']['cleaners']['Row']>;
-        Update: Partial<Database['public']['Tables']['cleaners']['Row']>;
-        Relationships: [
-          {
-            foreignKeyName: 'cleaners_platform_user_id_fkey';
-            columns: ['platform_user_id'];
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          }
-        ];
-      };      
+          abn: string | null
+          account_number: string | null
+          active: boolean
+          address: string | null
+          base_rate: number
+          bsb: string | null
+          calendar_colour: string | null
+          city: string
+          cleaner_xero_name: string
+          cleaning_couple: string | null
+          created_at: string | null
+          display_name: string
+          email: string | null
+          extra_comments: string | null
+          fri_in: boolean | null
+          fri_out: boolean | null
+          general_comments: string | null
+          hours_goal: number | null
+          id: number
+          key_ring_number: string | null
+          linen_storage_location: string | null
+          mobile: string | null
+          mon_in: boolean | null
+          mon_out: boolean | null
+          name: string | null
+          platform_user_id: string
+          registered_for_gst: boolean | null
+          sat_in: boolean | null
+          sat_out: boolean | null
+          suburb: string | null
+          sun_in: boolean | null
+          sun_out: boolean | null
+          thu_in: boolean | null
+          thu_out: boolean | null
+          tue_in: boolean | null
+          tue_out: boolean | null
+          updated_at: string | null
+          wed_in: boolean | null
+          wed_out: boolean | null
+          weekly_updates: string | null
+        }
+        Insert: {
+          abn?: string | null
+          account_number?: string | null
+          active?: boolean
+          address?: string | null
+          base_rate: number
+          bsb?: string | null
+          calendar_colour?: string | null
+          city: string
+          cleaner_xero_name: string
+          cleaning_couple?: string | null
+          created_at?: string | null
+          display_name: string
+          email?: string | null
+          extra_comments?: string | null
+          fri_in?: boolean | null
+          fri_out?: boolean | null
+          general_comments?: string | null
+          hours_goal?: number | null
+          id?: number
+          key_ring_number?: string | null
+          linen_storage_location?: string | null
+          mobile?: string | null
+          mon_in?: boolean | null
+          mon_out?: boolean | null
+          name?: string | null
+          platform_user_id: string
+          registered_for_gst?: boolean | null
+          sat_in?: boolean | null
+          sat_out?: boolean | null
+          suburb?: string | null
+          sun_in?: boolean | null
+          sun_out?: boolean | null
+          thu_in?: boolean | null
+          thu_out?: boolean | null
+          tue_in?: boolean | null
+          tue_out?: boolean | null
+          updated_at?: string | null
+          wed_in?: boolean | null
+          wed_out?: boolean | null
+          weekly_updates?: string | null
+        }
+        Update: {
+          abn?: string | null
+          account_number?: string | null
+          active?: boolean
+          address?: string | null
+          base_rate?: number
+          bsb?: string | null
+          calendar_colour?: string | null
+          city?: string
+          cleaner_xero_name?: string
+          cleaning_couple?: string | null
+          created_at?: string | null
+          display_name?: string
+          email?: string | null
+          extra_comments?: string | null
+          fri_in?: boolean | null
+          fri_out?: boolean | null
+          general_comments?: string | null
+          hours_goal?: number | null
+          id?: number
+          key_ring_number?: string | null
+          linen_storage_location?: string | null
+          mobile?: string | null
+          mon_in?: boolean | null
+          mon_out?: boolean | null
+          name?: string | null
+          platform_user_id?: string
+          registered_for_gst?: boolean | null
+          sat_in?: boolean | null
+          sat_out?: boolean | null
+          suburb?: string | null
+          sun_in?: boolean | null
+          sun_out?: boolean | null
+          thu_in?: boolean | null
+          thu_out?: boolean | null
+          tue_in?: boolean | null
+          tue_out?: boolean | null
+          updated_at?: string | null
+          wed_in?: boolean | null
+          wed_out?: boolean | null
+          weekly_updates?: string | null
+        }
+        Relationships: []
+      }
       cleaning_tasks: {
         Row: {
           assigned_cleaner_names: string | null
@@ -106,7 +174,7 @@ export type Database = {
           scheduled_date: string
           status?: string
           task_category?: string
-          task_type: string
+          task_type?: string
           updated_at?: string
         }
         Update: {
@@ -139,6 +207,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          active: boolean
           business_address: string | null
           charge_per_hour: boolean
           created_at: string
@@ -159,6 +228,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active?: boolean
           business_address?: string | null
           charge_per_hour?: boolean
           created_at?: string
@@ -179,6 +249,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active?: boolean
           business_address?: string | null
           charge_per_hour?: boolean
           created_at?: string
@@ -453,59 +524,56 @@ export type Database = {
           },
         ]
       }
-
       task_activity_log: {
         Row: {
-          id: number;
-          created_at: string;
-          task_id: number;
-          type: string;
-          title: string | null;
-          details: string | null;
-          amount: number | null;
-          created_by: string | null;
-          platform_user_id: string;
-          visibility: string | null;
-          metadata: Record<string, unknown> | null;
-        };
+          amount: number | null
+          created_at: string
+          created_by: string | null
+          details: string | null
+          id: number
+          metadata: Json | null
+          platform_user_id: string
+          task_id: number
+          title: string | null
+          type: string
+          visibility: string | null
+        }
         Insert: {
-          task_id: number;
-          type: string;
-          title?: string | null;
-          details?: string | null;
-          amount?: number | null;
-          created_by?: string | null;
-          platform_user_id: string;
-          visibility?: string | null;
-          metadata: Record<string, unknown> | null;
-        };
+          amount?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: string | null
+          id?: number
+          metadata?: Json | null
+          platform_user_id: string
+          task_id: number
+          title?: string | null
+          type: string
+          visibility?: string | null
+        }
         Update: {
-          task_id?: number;
-          type?: string;
-          title?: string | null;
-          details?: string | null;
-          amount?: number | null;
-          created_by?: string | null;
-          platform_user_id?: string;
-          visibility?: string | null;
-          metadata: Record<string, unknown> | null;
-        };
+          amount?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: string | null
+          id?: number
+          metadata?: Json | null
+          platform_user_id?: string
+          task_id?: number
+          title?: string | null
+          type?: string
+          visibility?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "task_activity_log_created_by_fkey";
-            columns: ["created_by"];
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "task_activity_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "cleaning_tasks"
+            referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "task_activity_log_task_id_fkey";
-            columns: ["task_id"];
-            referencedRelation: "cleaning_tasks";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-
+        ]
+      }
     }
     Views: {
       [_ in never]: never
