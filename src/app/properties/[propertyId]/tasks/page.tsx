@@ -12,11 +12,16 @@ import type { PropertyWithClient } from 'src/generated-types/customTypes';
 import CreateTaskDrawer from '../../../../components/CreateTaskDrawer';
 
 
-type CleaningTask = Database['public']['Tables']['cleaning_tasks']['Row'];
+type CleaningTaskWithType = Database['public']['Tables']['cleaning_tasks']['Row'] & {
+  task_types?: {
+    name: string;
+  } | null;
+};
+
 
 const supabase = createClientComponentClient<Database>();
 
-export function convertTasksToCSV(tasks: CleaningTask[]): string {
+export function convertTasksToCSV(tasks: CleaningTaskWithType[]): string {
   const header = [
     'ID',
     'Scheduled Date',
@@ -31,7 +36,7 @@ export function convertTasksToCSV(tasks: CleaningTask[]): string {
     task.id,
     task.scheduled_date,
     task.task_category,
-    task.task_type,
+    task.task_types?.name || '',
     task.status,
     task.assigned_cleaner_names ?? '',
     task.assigned_coordinator_name ?? '',
@@ -47,7 +52,7 @@ export default function PropertyTasksPage() {
   const [property, setProperty] = useState<PropertyWithClient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tasks, setTasks] = useState<CleaningTask[]>([]);
+  const [tasks, setTasks] = useState<CleaningTaskWithType[]>([]);
   type SupabaseAuthUser = {
     id: string;
     email?: string;
@@ -66,14 +71,14 @@ export default function PropertyTasksPage() {
   const [showDrawer, setShowDrawer] = useState(false);
     const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
-        task.task_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.task_types?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task.notes?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesCategory =
         selectedCategories.length === 0 || selectedCategories.includes(task.task_category || '');
 
     const matchesType =
-        selectedTypes.length === 0 || selectedTypes.includes(task.task_type || '');
+        selectedTypes.length === 0 || selectedTypes.includes(task.task_types?.name || '')
 
     const matchesStatus =
         selectedStatuses.length === 0 || selectedStatuses.includes(task.status || '');
@@ -127,7 +132,7 @@ export default function PropertyTasksPage() {
     async function loadTasks() {
         const { data, error } = await supabase
         .from('cleaning_tasks')
-        .select('*')
+        .select('*, task_types(name)')
         .eq('property_id', property!.id) // ✅ Type assertion
         .eq('platform_user_id', user!.id)
         .order('scheduled_date', { ascending: false });
@@ -204,7 +209,7 @@ export default function PropertyTasksPage() {
         <div>
             <label className="block font-semibold mb-1">Filter by Type:</label>
             <div className="flex gap-4 flex-wrap">
-            {Array.from(new Set(tasks.map(t => t.task_type).filter(Boolean))).map((type) => (
+            {Array.from(new Set(tasks.map(t => t.task_types?.name).filter(Boolean))).map((type) => (
                 <label key={type} className="inline-flex items-center space-x-2">
                 <input
                     type="checkbox"
@@ -334,7 +339,7 @@ export default function PropertyTasksPage() {
                     </td>
                     <td className="px-4 py-2 text-sm text-gray-700">{task.scheduled_date}</td>
                     <td className="px-4 py-2 text-sm text-gray-700">{task.task_category}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{task.task_type}</td>
+                    <td className="px-4 py-2 text-sm text-gray-700">{task.task_types?.name || '—'}</td>
                     <td className="px-4 py-2 text-sm text-gray-700">{task.status}</td>
                     <td className="px-4 py-2 text-sm text-gray-700">{task.assigned_cleaner_names || '—'}</td>
                     <td className="px-4 py-2 text-sm text-gray-700">{task.assigned_coordinator_name || '—'}</td>

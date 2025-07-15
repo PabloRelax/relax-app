@@ -3,107 +3,158 @@ import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
+// Configuration constants
+const BATCH_SIZE = 20; // Process 20 properties at a time
+const MAX_RETRIES = 2; // Retry failed syncs up to 2 times
+
 export async function GET() {
   const cookieStore = cookies();
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-
+  
   try {
-    // 1. Get all active properties with valid platform_user_id
-    const { data: properties, error: propertyError } = await supabase
+    // 1. Fetch only active properties with at least one active, non-null iCal
+    const { data: properties, count: totalProperties, error: propertyError } = await supabase
       .from('properties')
-      .select('id, platform_user_id')
-      .eq('status', 'active');
+      .select('id, platform_user_id, property_icals!inner(id)', { count: 'exact' })
+      .eq('status', 'active')
+      .eq('property_icals.active', true)
+      .not('property_icals.url', 'is', null);
 
     if (propertyError) throw new Error(`Error fetching properties: ${propertyError.message}`);
-    if (!properties || properties.length === 0) return NextResponse.json({ message: 'No active properties found.' });
+    if (!properties) throw new Error(`No properties returned from Supabase query.`);
 
-    const syncResults: { propertyId: number; icalUrl: string; status: string; error?: string }[] = [];
+    console.log(`Starting sync for ${totalProperties} active properties`);
 
-    // 2. Loop over properties
-    for (const { id: propertyId, platform_user_id } of properties) {
-      if (!platform_user_id) {
-        console.warn(`Property ${propertyId} has no platform_user_id — skipping.`);
-        continue;
-      }
+    // 2. Process in batches
+    let processed = 0;
+    let page = 0;
+    const syncResults = [];
 
-      // 3. Get all active iCals for this property
-      const { data: icals, error: icalError } = await supabase
-        .from('property_icals')
-        .select('url')
-        .eq('property_id', propertyId)
-        .eq('active', true);
+    while (processed < totalProperties!) {
+      const propertiesToProcess = properties.slice(page * BATCH_SIZE, (page + 1) * BATCH_SIZE);
 
-      if (icalError) {
-        console.error(`Error fetching iCals for property ${propertyId}:`, icalError.message);
-        syncResults.push({ propertyId, icalUrl: '', status: 'error', error: icalError.message });
-        continue;
-      }
+      // Process each property in batch
+      for (const { id: propertyId, platform_user_id } of propertiesToProcess) {
+      //for (const { id: propertyId, platform_user_id } of properties) { all properties pablo
+        if (!platform_user_id) {
+          console.warn(`Property ${propertyId} has no platform_user_id — skipping.`);
+          syncResults.push({ propertyId, status: 'skipped', error: 'No platform_user_id' });
+          continue;
+        }
 
-      if (!icals || icals.length === 0) {
-        syncResults.push({ propertyId, icalUrl: '', status: 'skipped', error: 'No active iCals found.' });
-        continue;
-      }
+        let retries = 0;
+        let success = false;
 
-      // 4. Loop over iCals and sync each
-      for (const { url } of icals) {
-        try {
-          const syncRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/sync-ical`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              property_id: propertyId,
-              platform_user_id,
-            }),
-          });
+        // Retry logic
+        while (retries <= MAX_RETRIES && !success) {
+          try {
+            const icals = await getActiveICals(supabase, propertyId);
+            
+            if (!icals.length) {
+              syncResults.push({ propertyId, status: 'skipped', error: 'No active iCals' });
+              success = true;
+              continue;
+            }
 
-          const syncData = await syncRes.json();
-          if (!syncRes.ok) {
-            syncResults.push({ propertyId, icalUrl: url, status: 'failed', error: syncData.error || 'Unknown error' });
-          } else {
-            syncResults.push({ propertyId, icalUrl: url, status: 'success' });
+            // Process each iCal
+            for (const { url } of icals) {
+              const result = await syncICal(
+                propertyId, 
+                platform_user_id, 
+                url,
+                retries
+              );
+              syncResults.push(result);
+            }
+
+            // Generate cleaning tasks after successful sync
+            await generateCleaningTasks(propertyId);
+            success = true;
+          } catch (error) {
+            retries++;
+            if (retries > MAX_RETRIES) {
+              syncResults.push({
+                propertyId,
+                status: 'failed',
+                error: error instanceof Error ? error.message : 'Sync failed'
+              });
+            }
           }
-        } catch (err: any) {
-          console.error(`Sync error for property ${propertyId}, URL ${url}:`, err.message);
-          syncResults.push({ propertyId, icalUrl: url, status: 'error', error: err.message });
         }
+
+        processed++;
+        console.log(`Processed ${processed}/${totalProperties} properties`);
       }
 
-      // 5. Generate cleaning tasks for the property after syncing all iCals
-      try {
-        // First get the newly created reservations (moved BEFORE the fetch call)
-        const { data: newReservations } = await supabase
-          .from('reservations')
-          .select('id')
-          .eq('property_id', propertyId)
-          .order('created_at', { ascending: false })
-          .limit(10);
-
-        console.log(`Found ${newReservations?.length} reservations for property ${propertyId}`);
-
-        const taskRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/generate-cleaning-tasks`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            property_id: propertyId,
-            reservation_ids: newReservations?.map(r => r.id) || [] 
-          }),
-        });
-
-        if (!taskRes.ok) {
-          const taskError = await taskRes.json();
-          console.error(`Task generation failed for property ${propertyId}:`, taskError.error);
-        } else {
-          const taskData = await taskRes.json();
-          console.log(`Tasks generated for property ${propertyId}:`, taskData);
-        }
-      } catch (taskErr: any) {
-        console.error(`Error triggering task generation for property ${propertyId}:`, taskErr.message);
-      }
+      page++;
     }
 
-    return NextResponse.json({ message: 'Sync complete', results: syncResults });
+    return NextResponse.json({ 
+      message: 'Sync complete',
+      stats: {
+        total: totalProperties,
+        succeeded: syncResults.filter(r => r.status === 'success').length,
+        failed: syncResults.filter(r => r.status === 'failed').length,
+        skipped: syncResults.filter(r => r.status === 'skipped').length
+      },
+      results: syncResults 
+    });
+
   } catch (err: any) {
     console.error('Unexpected error:', err.message);
-    return NextResponse.json({ error: 'Unexpected error: ' + err.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Unexpected error: ' + err.message 
+    }, { status: 500 });
+  }
+}
+
+// Helper functions
+async function getActiveICals(supabase: any, propertyId: number) {
+  const { data, error } = await supabase
+    .from('property_icals')
+    .select('url')
+    .eq('property_id', propertyId)
+    .eq('active', true);
+
+  if (error) throw error;
+  return data || [];
+}
+
+async function syncICal(propertyId: number, platformUserId: string, url: string, attempt: number) {
+  try {
+    const syncRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/sync-ical`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`
+      },
+      body: JSON.stringify({ property_id: propertyId, platform_user_id: platformUserId })
+    });
+
+    if (!syncRes.ok) {
+      const errorData = await syncRes.json();
+      throw new Error(errorData.error || 'Sync failed');
+    }
+
+    return { 
+      propertyId, 
+      icalUrl: url, 
+      status: 'success',
+      attempt: attempt + 1 
+    };
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function generateCleaningTasks(propertyId: number) {
+  try {
+    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/generate-cleaning-tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ property_id: propertyId })
+    });
+  } catch (error) {
+    console.error(`Task generation failed for property ${propertyId}:`, error);
   }
 }

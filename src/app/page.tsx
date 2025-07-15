@@ -27,9 +27,9 @@ export default function Home() {
       setUser(data.user) // Set the user state based on the fetched data
       setLoading(false) // Stop loading once user check is complete
 
-      // If a user is found, redirect them to the dashboard
+      // If a user is found, redirect them to the multiview
       if (data.user) {
-        router.push('/dashboard')
+        router.push('/multiview')
       }
     }
 

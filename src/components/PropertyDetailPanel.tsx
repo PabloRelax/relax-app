@@ -3,12 +3,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import type { Tables } from 'types/supabase';
-
-
-// Define the type for a property row with joined client display name
-type PropertyWithClient = Tables<'properties'> & {
-  clients: Pick<Tables<'clients'>, 'display_name'> | null;
-};
+import type { PropertyWithClient } from '@/generated-types/customTypes';
 
 interface PropertyDetailPanelProps {
   property: PropertyWithClient; // The property object to display
@@ -124,19 +119,18 @@ export default function PropertyDetailPanel({ property, onClose }: PropertyDetai
   );
 
   // Helper to render a detail row
-  const DetailRow: React.FC<{ label: string; value: string | number | boolean | null | undefined }> = ({ label, value }) => {
-    if (value === null || value === undefined || value === '' || (typeof value === 'number' && value === 0)) return null;
-
-    let displayValue: string;
-    if (typeof value === 'boolean') {
-      displayValue = value ? 'Yes' : 'No';
-    } else {
-      displayValue = String(value);
-    }
+  const DetailRow: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => {
+    if (
+      value === null ||
+      value === undefined ||
+      value === '' ||
+      (typeof value === 'number' && value === 0)
+    )
+      return null;
 
     return (
       <p className="text-sm text-gray-700 mb-1">
-        <span className="font-medium">{label}:</span> {displayValue}
+        <span className="font-medium">{label}:</span> {value}
       </p>
     );
   };
@@ -194,8 +188,8 @@ export default function PropertyDetailPanel({ property, onClose }: PropertyDetai
       {property.client_property_nickname && (
         <DetailRow label="Nickname" value={property.client_property_nickname} />
       )}
-      <DetailRow label="City" value={property.city} />
-      <DetailRow label="Suburb" value={property.suburb} />
+      <DetailRow label="City" value={property.cities?.name} />
+      <DetailRow label="Suburb" value={property.suburbs?.name} />
       <DetailRow label="Client Name" value={property.clients?.display_name} />
       <DetailRow label="Client ID" value={property.client_id} />
 
@@ -209,13 +203,12 @@ export default function PropertyDetailPanel({ property, onClose }: PropertyDetai
       <DetailRow label="Key Situation Cleaner" value={property.key_situation_cleaner} />
 
       {/* PROPERTY SPECIFICS Section (Conditionally displayed) */}
-      {isSectionNotEmpty([property.property_specifics, property.property_specifics_link, property.service_type, property.service_sub_type]) && (
+      {isSectionNotEmpty([property.property_specifics, property.property_specifics_link, property.property_service_types?.name]) && (
         <>
           <SectionTitle title="PROPERTY SPECIFICS" />
           <DetailRow label="Specifics" value={property.property_specifics} />
           <DetailRow label="Specifics Link" value={property.property_specifics_link} />
-          <DetailRow label="Service Type" value={property.service_type} />
-          <DetailRow label="Service Sub Type" value={property.service_sub_type} />
+          <DetailRow label="Service Type" value={property.property_service_types?.name || 'N/A'} />          
         </>
       )}
 
@@ -253,7 +246,27 @@ export default function PropertyDetailPanel({ property, onClose }: PropertyDetai
 
       {/* OTHER Section */}
       <SectionTitle title="OTHER" />
-      <DetailRow label="iCal Link" value={property.ical} />
+      {property.property_icals && property.property_icals.length > 0 && (
+        <>
+          <SectionTitle title="iCal Links" />
+          {property.property_icals.map((ical, index) => (
+            <DetailRow
+              key={index}
+              label={`iCal Link ${index + 1}`}
+              value={
+                <a
+                  href={ical.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline"
+                >
+                  {ical.url}
+                </a>
+              }
+            />
+          ))}
+        </>
+      )}
       <DetailRow label="Airbnb Link" value={property.airbnb_link} />
       {property.default_cleaner && (
         <DetailRow label="Default Cleaner" value={property.default_cleaner} />

@@ -1,5 +1,3 @@
-// \types\supabase.ts
-
 export type Json =
   | string
   | number
@@ -9,14 +7,62 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
+      channels: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      cities: {
+        Row: {
+          color_tag: string | null
+          created_at: string | null
+          id: string
+          name: string
+          short_name: string
+        }
+        Insert: {
+          color_tag?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          short_name: string
+        }
+        Update: {
+          color_tag?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          short_name?: string
+        }
+        Relationships: []
+      }
       cleaners: {
         Row: {
           abn: string | null
           account_number: string | null
           active: boolean
           address: string | null
+          auth_user_id: string | null
           base_rate: number
           bsb: string | null
           calendar_colour: string | null
@@ -59,6 +105,7 @@ export type Database = {
           account_number?: string | null
           active?: boolean
           address?: string | null
+          auth_user_id?: string | null
           base_rate: number
           bsb?: string | null
           calendar_colour?: string | null
@@ -101,6 +148,7 @@ export type Database = {
           account_number?: string | null
           active?: boolean
           address?: string | null
+          auth_user_id?: string | null
           base_rate?: number
           bsb?: string | null
           calendar_colour?: string | null
@@ -138,69 +186,290 @@ export type Database = {
           wed_out?: boolean | null
           weekly_updates?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cleaners_auth_user_id_fkey"
+            columns: ["auth_user_id"]
+            isOneToOne: true
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaners_platform_user_id_fkey"
+            columns: ["platform_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cleaning_task_photos: {
+        Row: {
+          cleaner_id: number
+          created_at: string
+          gps_lat: number | null
+          gps_lng: number | null
+          id: number
+          notes: string | null
+          photo_taken_at: string | null
+          photo_url: string
+          task_id: number
+        }
+        Insert: {
+          cleaner_id: number
+          created_at?: string
+          gps_lat?: number | null
+          gps_lng?: number | null
+          id?: number
+          notes?: string | null
+          photo_taken_at?: string | null
+          photo_url: string
+          task_id: number
+        }
+        Update: {
+          cleaner_id?: number
+          created_at?: string
+          gps_lat?: number | null
+          gps_lng?: number | null
+          id?: number
+          notes?: string | null
+          photo_taken_at?: string | null
+          photo_url?: string
+          task_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleaning_task_photos_cleaner_id_fkey"
+            columns: ["cleaner_id"]
+            isOneToOne: false
+            referencedRelation: "cleaners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_task_photos_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "cleaning_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_task_photos_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "operations_table_view"
+            referencedColumns: ["task_id"]
+          },
+        ]
       }
       cleaning_tasks: {
         Row: {
           assigned_cleaner_names: string | null
           assigned_coordinator_name: string | null
+          bonus: string | null
+          cleaner1_id: number | null
+          cleaner2_id: number | null
+          cleaner3_id: number | null
+          cleaner4_id: number | null
+          cleaning_issues: string | null
+          completed_by: string | null
+          completed_on: string | null
+          coordinator_notes: string | null
           created_at: string
+          finish_by: string | null
+          finished_at: string | null
           id: number
+          inspection_issues: string | null
+          invoice_notes: string | null
           issue_category: string | null
           issue_status: string | null
+          key_situation_confirmed: boolean | null
+          key_situation_confirmed_at: string | null
+          key_situation_confirmed_by: string | null
+          maintenance_issues: string | null
+          manual_notes: string | null
           notes: string | null
+          photos_link: string | null
           platform_user_id: string
           priority_tag: string | null
           property_id: number
+          property_specifics_confirmed: boolean | null
+          property_specifics_confirmed_at: string | null
+          property_specifics_confirmed_by: string | null
+          reported_via: string | null
           reservation_id: number | null
           scheduled_date: string
+          second_keyset_confirmed: boolean | null
+          second_keyset_confirmed_at: string | null
+          second_keyset_confirmed_by: string | null
+          special_request: string | null
+          special_request_confirmed: boolean | null
+          special_request_confirmed_at: string | null
+          special_request_confirmed_by: string | null
+          start_after: string | null
+          start_at: string | null
+          started_at: string | null
           status: string
           task_category: string
-          task_type: string
+          task_type_id: string | null
           updated_at: string
         }
         Insert: {
           assigned_cleaner_names?: string | null
           assigned_coordinator_name?: string | null
+          bonus?: string | null
+          cleaner1_id?: number | null
+          cleaner2_id?: number | null
+          cleaner3_id?: number | null
+          cleaner4_id?: number | null
+          cleaning_issues?: string | null
+          completed_by?: string | null
+          completed_on?: string | null
+          coordinator_notes?: string | null
           created_at?: string
+          finish_by?: string | null
+          finished_at?: string | null
           id?: number
+          inspection_issues?: string | null
+          invoice_notes?: string | null
           issue_category?: string | null
           issue_status?: string | null
+          key_situation_confirmed?: boolean | null
+          key_situation_confirmed_at?: string | null
+          key_situation_confirmed_by?: string | null
+          maintenance_issues?: string | null
+          manual_notes?: string | null
           notes?: string | null
+          photos_link?: string | null
           platform_user_id: string
           priority_tag?: string | null
           property_id: number
+          property_specifics_confirmed?: boolean | null
+          property_specifics_confirmed_at?: string | null
+          property_specifics_confirmed_by?: string | null
+          reported_via?: string | null
           reservation_id?: number | null
           scheduled_date: string
+          second_keyset_confirmed?: boolean | null
+          second_keyset_confirmed_at?: string | null
+          second_keyset_confirmed_by?: string | null
+          special_request?: string | null
+          special_request_confirmed?: boolean | null
+          special_request_confirmed_at?: string | null
+          special_request_confirmed_by?: string | null
+          start_after?: string | null
+          start_at?: string | null
+          started_at?: string | null
           status?: string
           task_category?: string
-          task_type?: string
+          task_type_id?: string | null
           updated_at?: string
         }
         Update: {
           assigned_cleaner_names?: string | null
           assigned_coordinator_name?: string | null
+          bonus?: string | null
+          cleaner1_id?: number | null
+          cleaner2_id?: number | null
+          cleaner3_id?: number | null
+          cleaner4_id?: number | null
+          cleaning_issues?: string | null
+          completed_by?: string | null
+          completed_on?: string | null
+          coordinator_notes?: string | null
           created_at?: string
+          finish_by?: string | null
+          finished_at?: string | null
           id?: number
+          inspection_issues?: string | null
+          invoice_notes?: string | null
           issue_category?: string | null
           issue_status?: string | null
+          key_situation_confirmed?: boolean | null
+          key_situation_confirmed_at?: string | null
+          key_situation_confirmed_by?: string | null
+          maintenance_issues?: string | null
+          manual_notes?: string | null
           notes?: string | null
+          photos_link?: string | null
           platform_user_id?: string
           priority_tag?: string | null
           property_id?: number
+          property_specifics_confirmed?: boolean | null
+          property_specifics_confirmed_at?: string | null
+          property_specifics_confirmed_by?: string | null
+          reported_via?: string | null
           reservation_id?: number | null
           scheduled_date?: string
+          second_keyset_confirmed?: boolean | null
+          second_keyset_confirmed_at?: string | null
+          second_keyset_confirmed_by?: string | null
+          special_request?: string | null
+          special_request_confirmed?: boolean | null
+          special_request_confirmed_at?: string | null
+          special_request_confirmed_by?: string | null
+          start_after?: string | null
+          start_at?: string | null
+          started_at?: string | null
           status?: string
           task_category?: string
-          task_type?: string
+          task_type_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cleaning_tasks_cleaner1_id_fkey"
+            columns: ["cleaner1_id"]
+            isOneToOne: false
+            referencedRelation: "cleaners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_tasks_cleaner2_id_fkey"
+            columns: ["cleaner2_id"]
+            isOneToOne: false
+            referencedRelation: "cleaners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_tasks_cleaner3_id_fkey"
+            columns: ["cleaner3_id"]
+            isOneToOne: false
+            referencedRelation: "cleaners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_tasks_cleaner4_id_fkey"
+            columns: ["cleaner4_id"]
+            isOneToOne: false
+            referencedRelation: "cleaners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_tasks_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_tasks_platform_user_id_fkey"
+            columns: ["platform_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cleaning_tasks_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_tasks_task_type_id_fkey"
+            columns: ["task_type_id"]
+            isOneToOne: false
+            referencedRelation: "task_types"
             referencedColumns: ["id"]
           },
         ]
@@ -269,7 +538,15 @@ export type Database = {
           type?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_platform_user_id_fkey"
+            columns: ["platform_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       properties: {
         Row: {
@@ -282,7 +559,7 @@ export type Database = {
           bedrooms: number | null
           bonus_amount: number | null
           bonus_description: string | null
-          city: string
+          city_id: string
           cleaning_exc_gst: number | null
           client_id: number
           client_property_nickname: string | null
@@ -301,7 +578,6 @@ export type Database = {
           has_second_keyset: string | null
           hours_per_service: number | null
           hsk_key_tag: string | null
-          ical: string | null
           id: number
           key_comments: string | null
           key_situation_cleaner: string | null
@@ -321,13 +597,14 @@ export type Database = {
           queen_satin_top: number | null
           queen_sheets: number | null
           service_sub_type: string | null
-          service_type: string
+          service_type_id: string
           short_address: string
           single_beds: number | null
           single_satin_top: number | null
           single_sheets: number | null
           status: string
-          suburb: string
+          storage_id: string | null
+          suburb_id: string
           tea_towels: number | null
           updated_at: string
           washer: boolean
@@ -343,7 +620,7 @@ export type Database = {
           bedrooms?: number | null
           bonus_amount?: number | null
           bonus_description?: string | null
-          city: string
+          city_id: string
           cleaning_exc_gst?: number | null
           client_id: number
           client_property_nickname?: string | null
@@ -362,7 +639,6 @@ export type Database = {
           has_second_keyset?: string | null
           hours_per_service?: number | null
           hsk_key_tag?: string | null
-          ical?: string | null
           id?: number
           key_comments?: string | null
           key_situation_cleaner?: string | null
@@ -382,13 +658,14 @@ export type Database = {
           queen_satin_top?: number | null
           queen_sheets?: number | null
           service_sub_type?: string | null
-          service_type: string
+          service_type_id: string
           short_address: string
           single_beds?: number | null
           single_satin_top?: number | null
           single_sheets?: number | null
           status: string
-          suburb: string
+          storage_id?: string | null
+          suburb_id: string
           tea_towels?: number | null
           updated_at?: string
           washer?: boolean
@@ -404,7 +681,7 @@ export type Database = {
           bedrooms?: number | null
           bonus_amount?: number | null
           bonus_description?: string | null
-          city?: string
+          city_id?: string
           cleaning_exc_gst?: number | null
           client_id?: number
           client_property_nickname?: string | null
@@ -423,7 +700,6 @@ export type Database = {
           has_second_keyset?: string | null
           hours_per_service?: number | null
           hsk_key_tag?: string | null
-          ical?: string | null
           id?: number
           key_comments?: string | null
           key_situation_cleaner?: string | null
@@ -443,13 +719,14 @@ export type Database = {
           queen_satin_top?: number | null
           queen_sheets?: number | null
           service_sub_type?: string | null
-          service_type?: string
+          service_type_id?: string
           short_address?: string
           single_beds?: number | null
           single_satin_top?: number | null
           single_sheets?: number | null
           status?: string
-          suburb?: string
+          storage_id?: string | null
+          suburb_id?: string
           tea_towels?: number | null
           updated_at?: string
           washer?: boolean
@@ -457,10 +734,118 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "properties_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "properties_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_platform_user_id_fkey"
+            columns: ["platform_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "property_service_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_storage_id_fkey"
+            columns: ["storage_id"]
+            isOneToOne: false
+            referencedRelation: "storages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_suburb_id_fkey"
+            columns: ["suburb_id"]
+            isOneToOne: false
+            referencedRelation: "suburbs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_icals: {
+        Row: {
+          active: boolean
+          created_at: string | null
+          id: number
+          platform: string | null
+          property_id: number
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string | null
+          id?: number
+          platform?: string | null
+          property_id: number
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string | null
+          id?: number
+          platform?: string | null
+          property_id?: number
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_icals_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_service_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          platform_user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          platform_user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          platform_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_types_platform_user_id_fkey"
+            columns: ["platform_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
             referencedColumns: ["id"]
           },
         ]
@@ -516,10 +901,88 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "reservations_platform_user_id_fkey"
+            columns: ["platform_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reservations_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      storages: {
+        Row: {
+          address: string | null
+          city_id: string
+          created_at: string | null
+          id: string
+          name: string
+          platform_user_id: string
+        }
+        Insert: {
+          address?: string | null
+          city_id: string
+          created_at?: string | null
+          id?: string
+          name: string
+          platform_user_id: string
+        }
+        Update: {
+          address?: string | null
+          city_id?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          platform_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storages_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storages_platform_user_id_fkey"
+            columns: ["platform_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suburbs: {
+        Row: {
+          city_id: string
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          city_id: string
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          city_id?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suburbs_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
             referencedColumns: ["id"]
           },
         ]
@@ -566,17 +1029,216 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "task_activity_log_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_activity_log_platform_user_id_fkey"
+            columns: ["platform_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "task_activity_log_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "cleaning_tasks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "task_activity_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "operations_table_view"
+            referencedColumns: ["task_id"]
+          },
+        ]
+      }
+      task_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          platform_user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          platform_user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          platform_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_types_platform_user_id_fkey"
+            columns: ["platform_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          platform_user_id: string
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          platform_user_id: string
+          role: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          platform_user_id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      operations_table_view: {
+        Row: {
+          assigned_coordinator_name: string | null
+          bonus: string | null
+          bonus_amount: number | null
+          bonus_description: string | null
+          city_color_tag: string | null
+          city_short_name: string | null
+          cleaner1_id: number | null
+          cleaner1_name: string | null
+          cleaner1_rate: number | null
+          cleaner2_id: number | null
+          cleaner2_name: string | null
+          cleaner2_rate: number | null
+          cleaner3_id: number | null
+          cleaner3_name: string | null
+          cleaner3_rate: number | null
+          cleaner4_id: number | null
+          cleaner4_name: string | null
+          cleaner4_rate: number | null
+          cleaning_issues: string | null
+          client_display_name: string | null
+          client_property_nickname: string | null
+          completed_by: string | null
+          completed_on: string | null
+          coordinator_notes: string | null
+          created_at: string | null
+          finish_by: string | null
+          has_second_keyset: string | null
+          hours_per_service: number | null
+          inspection_issues: string | null
+          invoice_notes: string | null
+          key_situation_cleaner: string | null
+          key_situation_confirmed: boolean | null
+          key_situation_confirmed_at: string | null
+          key_situation_confirmed_by: string | null
+          maintenance_issues: string | null
+          manual_notes: string | null
+          photos_link: string | null
+          priority_tag: string | null
+          property_specifics: string | null
+          property_specifics_confirmed: boolean | null
+          property_specifics_confirmed_at: string | null
+          property_specifics_confirmed_by: string | null
+          property_specifics_link: string | null
+          reported_via: string | null
+          scheduled_date: string | null
+          second_keyset_confirmed: boolean | null
+          second_keyset_confirmed_at: string | null
+          second_keyset_confirmed_by: string | null
+          service_type_name: string | null
+          short_address: string | null
+          special_request: string | null
+          special_request_confirmed: boolean | null
+          special_request_confirmed_at: string | null
+          special_request_confirmed_by: string | null
+          start_after: string | null
+          start_at: string | null
+          status: string | null
+          storage_name: string | null
+          suburb_name: string | null
+          task_id: number | null
+          task_type_name: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleaning_tasks_cleaner1_id_fkey"
+            columns: ["cleaner1_id"]
+            isOneToOne: false
+            referencedRelation: "cleaners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_tasks_cleaner2_id_fkey"
+            columns: ["cleaner2_id"]
+            isOneToOne: false
+            referencedRelation: "cleaners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_tasks_cleaner3_id_fkey"
+            columns: ["cleaner3_id"]
+            isOneToOne: false
+            referencedRelation: "cleaners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_tasks_cleaner4_id_fkey"
+            columns: ["cleaner4_id"]
+            isOneToOne: false
+            referencedRelation: "cleaners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_tasks_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users_view: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string | null
+          role: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
@@ -590,21 +1252,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -622,14 +1288,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -645,14 +1313,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -668,14 +1338,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -683,14 +1355,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

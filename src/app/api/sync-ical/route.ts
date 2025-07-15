@@ -1,8 +1,8 @@
 // src/app/api/sync-ical/route.ts
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import supabase from '@/lib/supabase/server';
 import { cookies } from 'next/headers'; 
 import ical from 'ical.js';
-import { fetchAirbnbICal } from 'lib/fetchAirbnbICal';
+import { fetchAirbnbICal } from '@/lib/fetchAirbnbICal';
 
 function formatDateToYYYYMMDD(date: Date): string {
   const year = date.getFullYear();
@@ -13,9 +13,7 @@ function formatDateToYYYYMMDD(date: Date): string {
 
 export async function POST(request: Request) {
   console.log('>> sync-ical handler reached');
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-
+  
   try {
     const { property_id, platform_user_id } = await request.json();
 
@@ -26,9 +24,14 @@ export async function POST(request: Request) {
       });
     }
 
-    const propertiesToSync = property_id
-      ? [{ id: property_id }]
-      : [{ id: 808 }, { id: 715 }]; // Replace with a couple of known property IDs
+    if (!property_id) {
+      return new Response(JSON.stringify({ error: 'Missing property_id' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const propertiesToSync = [{ id: property_id }];
 
     const reservationsToInsert: {
       property_id: number;
@@ -166,6 +169,8 @@ export async function POST(request: Request) {
 
     console.log('>> Preparing to upsert reservations:', reservationsToInsert.length);
     console.dir(reservationsToInsert, { depth: null });
+
+    console.log('Will attempt to upsert this many reservations:', reservationsToInsert.length);
 
     console.log('Sample reservation data being upserted:', {
       sample: reservationsToInsert[0],

@@ -1,13 +1,17 @@
 // components/CreateTaskDrawer.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { PropertyWithClient } from '../generated-types/customTypes';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from 'types/supabase';
 import type { TablesInsert } from 'types/supabase';
+
+type TaskType = Database['public']['Tables']['task_types']['Row'];
+
+const supabase = createClientComponentClient<Database>();
 
 interface CreateTaskDrawerProps {
   defaultProperty?: PropertyWithClient | null;
@@ -24,23 +28,36 @@ export default function CreateTaskDrawer({
 }: CreateTaskDrawerProps) {
   const [property, setProperty] = useState<PropertyWithClient | null>(defaultProperty);
   const [scheduledDate, setScheduledDate] = useState<Date | null>(new Date());
-  const [taskType, setTaskType] = useState('');
   const [notes, setNotes] = useState('');
   const [priorityTag, setPriorityTag] = useState('Departure Clean');
   const showPropertySelector = true;
   const supabase = createClientComponentClient<Database>();
+  const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
+  const [taskTypeId, setTaskTypeId] = useState<string | null>(null);
 
+  useEffect(() => {
+    async function loadTaskTypes() {
+      const { data, error } = await supabase.from('task_types').select('*').order('name');
+      if (error) {
+        console.error('Failed to load task types:', error.message);
+      } else {
+        setTaskTypes(data || []);
+      }
+    }
+    loadTaskTypes();
+  }, []);
+  
   const handleCreateTask = async () => {
     if (!property) {
       alert('Please select a property before creating the task.');
       return;
     }
 
-    if (!taskType) {
+    if (!taskTypeId) {
       alert('Please select a task type before submitting.');
       return;
     }
-
+    
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData?.user?.id;
     if (!userId) {
@@ -54,8 +71,8 @@ export default function CreateTaskDrawer({
       platform_user_id: userId,
       property_id: property.id,
       scheduled_date: scheduledDate?.toISOString().slice(0, 10) ?? '',
-      task_type: taskType,
-      priority_tag: taskType === 'Clean' ? priorityTag : null,
+      task_type_id: taskTypeId,
+      priority_tag: taskTypes.find(t => t.id === taskTypeId)?.name === 'Clean' ? priorityTag : null,
       notes,
     }]);
 
@@ -102,23 +119,21 @@ export default function CreateTaskDrawer({
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">Task Type</label>
-        <select
-          value={taskType}
-          onChange={(e) => setTaskType(e.target.value)}
-          className="w-full border px-3 py-2 rounded"
-        >
-          <option value="">Select task type</option>
-          {[
-            'Clean', 'Callout', 'Double-Check', 'Deep Clean', 'Storage', 'Touch Up', 'Training',
-            'Entry Clean', 'RTO', 'Steam Clean', 'Setup', 'Discount', 'Correction', 'Mid-Stay',
-            'Waiting Time', 'Key Delivery', 'Extra Time', 'Task'
-          ].map(type => (
-            <option key={type} value={type}>{type}</option>
-          ))}
-        </select>
+          <select
+            value={taskTypeId ?? ''}
+            onChange={(e) => setTaskTypeId(e.target.value || null)}
+            className="w-full border px-3 py-2 rounded"
+          >
+            <option value="">Select task type</option>
+            {taskTypes.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
       </div>
 
-      {taskType === 'Clean' && (
+      {taskTypes.find(t => t.id === taskTypeId)?.name === 'Clean' && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Priority Tag</label>
           <select

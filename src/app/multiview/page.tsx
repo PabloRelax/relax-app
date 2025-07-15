@@ -23,6 +23,8 @@ export default function MultiViewPage() {
 
   const currentEndDate = moment(currentStartDate).add(6, 'days');
   const dateRange = Array.from({ length: 7 }).map((_, i) => moment(currentStartDate).add(i, 'days'));
+  const fetchStartDate = moment(currentStartDate).subtract(14, 'days').format('YYYY-MM-DD'); // 2 weeks before
+  const fetchEndDate = moment(currentEndDate).add(2, 'months').format('YYYY-MM-DD'); // 2 months after
   const today = moment().format('YYYY-MM-DD');
 
   useEffect(() => {
@@ -30,17 +32,41 @@ export default function MultiViewPage() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
 
-      const [{ data: props }, { data: res }, { data: tsk }] = await Promise.all([
-        supabase.from('properties').select('*, clients(display_name)').eq('platform_user_id', userData.user.id).eq('status', 'active'),
-        supabase.from('reservations').select('*').eq('platform_user_id', userData.user.id),
-        supabase.from('cleaning_tasks').select('*').eq('platform_user_id', userData.user.id),
-      ]);
+  const [{ data: props }, { data: res }, { data: tsk }] = await Promise.all([
+    supabase
+      .from('properties')
+      .select('*, clients(display_name), property_icals_property_id_fkey(url)')
+      .eq('platform_user_id', userData.user.id)
+      .eq('status', 'active'),
+    supabase
+      .from('reservations')
+      .select('*')
+      .eq('platform_user_id', userData.user.id)
+      .or(`and(start_date.lte.${fetchEndDate},end_date.gte.${fetchStartDate})`),
+    supabase.from('cleaning_tasks').select('*, task_types(name)').eq('platform_user_id', userData.user.id),
+  ]);
 
-      setProperties(props || []);
-      setReservations(res || []);
-      setTasks(tsk || []);
+  console.log('Reservations fetched (filtered):', res?.length);
+  console.log('Total reservations fetched:', res?.length);
+
+  setProperties(props || []);
+  setReservations(res || []);
+  setTasks(tsk || []);
     }
     loadData();
+      console.log("Debug Data:", {
+    properties: properties.map(p => ({ id: p.id, name: p.short_address })),
+    reservations: reservations.map(r => ({
+      id: r.id,
+      property_id: r.property_id,
+      start: r.start_date,
+      end: r.end_date,
+      brisbaneStart: getBrisbaneDate(r.start_date).format(),
+      brisbaneEnd: getBrisbaneDate(r.end_date).format()
+    })),
+    dateRange: dateRange.map(d => d.format())
+  });
+
   }, []);
 
   const filteredProperties = properties.filter((p) => {
@@ -117,40 +143,101 @@ export default function MultiViewPage() {
                 {filteredProperties.map(prop => (
                   <tr key={prop.id} className="align-top">
                     <td className="p-3 border border-gray-300 text-sm font-medium whitespace-nowrap align-top w-56">
-                      <div className={!prop.ical ? 'line-through text-gray-500' : ''}>
-                        {[prop.clients?.display_name, prop.short_address, prop.client_property_nickname].filter(Boolean).join(' – ') || 'Unnamed'}
+                      <div className={
+                        prop.property_icals_property_id_fkey?.length > 0 && 
+                        prop.property_icals_property_id_fkey[0]?.url
+                          ? ''
+                          : 'bg-red-100 text-gray-800 p-1 rounded'
+                      }>
+                        {[prop.clients?.display_name, prop.short_address, prop.client_property_nickname]
+                          .filter(Boolean)
+                          .join(' – ') || 'Unnamed'}
                       </div>
                     </td>
                     {dateRange.map(date => {
-                      const reservation = reservations.find(r => 
-                        r.property_id === prop.id && 
-                        (date.isSameOrAfter(moment(r.start_date), 'day') && 
-                        date.isSameOrBefore(moment(r.end_date), 'day'))
-                      );
-                      
-                      const isCheckoutDay = reservation && 
-                        date.isSame(getBrisbaneDate(reservation.end_date), 'day');
-                      const isCheckinDay = reservation && 
-                        date.isSame(getBrisbaneDate(reservation.start_date), 'day');
+                      const reservationsForDay = reservations.filter(r => {
+                        if (r.property_id !== prop.id) return false;
+
+                        const start = getBrisbaneDate(r.start_date);
+                        const end = getBrisbaneDate(r.end_date);
+
+                        return date.isBetween(start, end, 'day', '[]'); // Inclusive range
+                      });
+
                       const taskToday = tasks.find(t => t.property_id === prop.id && moment(t.scheduled_date).isSame(date, 'day'));
 
                       return (
-                        <td key={date.toString()} className="p-2 border border-gray-300 text-center text-xs w-20 align-top">
-                          {reservation && (
-                            <div className={`
-                              ${isCheckoutDay ? 'bg-blue-100 w-1/3 mr-auto' : 
-                              isCheckinDay ? 'bg-blue-100 w-1/3 ml-auto' : 'bg-blue-100'} 
-                              text-blue-800 rounded px-1 py-0.5 text-[11px]
-                            `}>
-                              {isCheckoutDay ? 'CO' : 
-                              isCheckinDay ? 'CI' : 'Guest'}
-                            </div>
-                          )}
+                        <td key={date.toString()} className="p-0 border border-gray-300 text-center text-xs w-20 align-top">
+                          {/* Group reservations */}
+                          {(() => {
+                            const checkIns = reservationsForDay.filter(r =>
+                              date.isSame(getBrisbaneDate(r.start_date), 'day')
+                            );
+                            const checkOuts = reservationsForDay.filter(r =>
+                              date.isSame(getBrisbaneDate(r.end_date), 'day')
+                            );
+                            const guestDays = reservationsForDay.filter(r =>
+                              !date.isSame(getBrisbaneDate(r.start_date), 'day') &&
+                              !date.isSame(getBrisbaneDate(r.end_date), 'day')
+                            );
+
+                            return (
+                              <>
+                                {/* Side-by-side CO and CI */}
+                                {checkIns.length > 0 && checkOuts.length > 0 && (
+                                  <div className="flex flex-row justify-between gap-1 mb-1">
+                                    {checkOuts.map(r => (
+                                      <div key={`co-${r.id}`} className="bg-blue-100 text-blue-800 rounded px-1 py-0.5 text-[11px] w-1/3 text-center">
+                                        CO
+                                      </div>
+                                    ))}
+                                    {checkIns.map(r => (
+                                      <div key={`ci-${r.id}`} className="bg-blue-100 text-blue-800 rounded px-1 py-0.5 text-[11px] w-1/3 text-center">
+                                        CI
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {checkOuts.length > 0 && checkIns.length === 0 && (
+                                  <div className="flex justify-start mb-1">
+                                    {checkOuts.map(r => (
+                                      <div key={`co-${r.id}`} className="bg-blue-100 text-blue-800 rounded px-1 py-0.5 text-[11px] w-1/3 text-center">
+                                        CO
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {checkIns.length > 0 && checkOuts.length === 0 && (
+                                  <div className="flex justify-end mb-1">
+                                    {checkIns.map(r => (
+                                      <div key={`ci-${r.id}`} className="bg-blue-100 text-blue-800 rounded px-1 py-0.5 text-[11px] w-1/3 text-center">
+                                        CI
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Guest (middle) days */}
+                                {guestDays.map(r => (
+                                  <div
+                                    key={`guest-${r.id}`}
+                                    className="bg-blue-100 text-blue-800 rounded w-full px-0 py-0.5 text-[11px] mb-1"
+                                  >
+                                    Guest
+                                  </div>
+                                ))}
+                              </>
+                            );
+                          })()}
+
+                          {/* Cleaning task (unchanged) */}
                           {taskToday && (
                             <div className="bg-yellow-100 text-yellow-800 rounded mt-1 px-1 py-0.5 text-[11px]">
-                              🧹 {taskToday.task_type === 'Clean' 
-                                ? `Clean – ${taskToday.priority_tag || 'N/A'}` 
-                                : taskToday.task_type}
+                              🧹 {(taskToday as any).task_types?.name === 'Clean'
+                                ? `Clean – ${taskToday.priority_tag || 'N/A'}`
+                                : (taskToday as any).task_types?.name ?? 'Other'}
                             </div>
                           )}
                         </td>

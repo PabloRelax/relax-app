@@ -16,9 +16,9 @@ import type { PropertyWithClient } from 'src/generated-types/customTypes';
 import { getPropertyNavigationItems } from '../../../../../supabase/functions/utils/getPropertyNavigation';
 import CreateTaskDrawer from '../../../../components/CreateTaskDrawer';
 
-
 type Reservation  = Tables<'reservations'>;
 type CleaningTask = Tables<'cleaning_tasks'>;
+type TaskType = Tables<'task_types'>;
 
 type CalendarEvent = {
   id: string;
@@ -73,7 +73,7 @@ export default function PropertyCalendarPage() {
   const [currentView, setCurrentView] = useState<View>('month');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [showDrawer, setShowDrawer] = useState(false);
-
+  const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
 
   useEffect(() => {
     async function loadCalendarData() {
@@ -126,7 +126,7 @@ export default function PropertyCalendarPage() {
 
       const { data: tasksData, error: tasksError } = await supabase
         .from('cleaning_tasks')
-        .select('*')
+        .select('*, task_types(name)')
         .eq('property_id', propertyIdNum)
         .eq('platform_user_id', userData.user.id);
 
@@ -226,15 +226,16 @@ reservations.forEach(res => {
   });
 });
 
-
     cleaningTasks.forEach(task => {
+      const taskTypeName = (task as any).task_types?.name ?? 'Other';
+
       calendarEvents.push({
         id: `task-${task.id}`,
-        title: task.task_type === 'Clean'
+        title: taskTypeName === 'Clean'
           ? `Clean – ${task.priority_tag || 'N/A'}`
-          : task.task_type,
+          : taskTypeName,
         start: new Date(task.scheduled_date),
-        end:   new Date(task.scheduled_date),
+        end: new Date(task.scheduled_date),
         allDay: true,
         isLastDay: false,
         isFirstDay: false,
@@ -335,12 +336,11 @@ reservations.forEach(res => {
             onClose={() => setShowDrawer(false)}
             onCreated={async () => {
               setShowDrawer(false);
-              const { data } = await supabase
-                .from('cleaning_tasks')
-                .select('*, properties(short_address, client_property_nickname)')
-                .eq('property_id', property.id)
-                .order('scheduled_date', { ascending: false });
-
+                const { data } = await supabase
+                  .from('cleaning_tasks')
+                  .select('*, properties(short_address, client_property_nickname), task_types(name)')
+                  .eq('property_id', property.id)
+                  .order('scheduled_date', { ascending: false });
               if (data) setCleaningTasks(data);
             }}
           />

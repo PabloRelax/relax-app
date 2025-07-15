@@ -20,7 +20,7 @@ type DbCleaningTask = {
   property_id: number;
   platform_user_id: string;
   task_category: string;
-  task_type: string;
+  task_type_id: string;
   priority_tag: string;
   scheduled_date: string; // YYYY-MM-DD
   status: string;
@@ -64,6 +64,39 @@ serve(async (req: Request) => {
       .select<string, DbReservation>('id, end_date, property_id, platform_user_id, status, reservation_uid, start_date')
       .gte('end_date', todayBrisbane) // Usamos la fecha de Brisbane
       .eq('status', 'confirmed');
+
+    // 🔍 Fetch task_types from the database
+    const { data: taskTypes, error: taskTypesError } = await supabaseClient
+      .from('task_types')
+      .select('id, name');
+
+    if (taskTypesError || !taskTypes) {
+      console.error('Error fetching task types:', taskTypesError?.message);
+      return new Response(JSON.stringify({ error: 'Failed to fetch task types' }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': '*',
+        }
+      });
+    }
+
+    // ✅ Find task_type_id for "Clean"
+    const cleanTaskType = taskTypes.find(t => t.name === 'Clean');
+    if (!cleanTaskType) {
+      console.error('Could not find task_type "Clean"');
+      return new Response(JSON.stringify({ error: 'Missing required task_type: Clean' }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': '*',
+        }
+      });
+    }
 
     if (reservationsError) {
       console.error('Error fetching reservations:', reservationsError.message);
@@ -110,14 +143,13 @@ serve(async (req: Request) => {
         .single();
 
       const priorityTag = nextReservation && !nextReservationError ? 'B2B' : 'Departure Clean';
-      const taskType = 'Clean';
-      
+            
       // 4. Check if a task already exists and is marked as Completed
       const { data: existingTask, error: existingTaskError } = await supabaseClient
         .from('cleaning_tasks')
-        .select('id, status')
+        .select('id, status, task_type_id')
         .eq('reservation_id', reservation.id)
-        .eq('task_type', taskType)
+        .eq('task_type_id', cleanTaskType.id)
         .eq('scheduled_date', scheduledDateForTask)
         .maybeSingle();
 
@@ -137,7 +169,7 @@ serve(async (req: Request) => {
         reservation_id: reservation.id,
         platform_user_id: reservation.platform_user_id,
         task_category: 'Clean',
-        task_type: taskType,
+        task_type_id: cleanTaskType.id,
         priority_tag: priorityTag,
         scheduled_date: scheduledDateForTask, // Usamos la fecha de checkout directamente
         status: 'Unassigned',
@@ -158,8 +190,8 @@ serve(async (req: Request) => {
     // 6. Insertar/Actualizar tareas en lote
     const { error: upsertError } = await supabaseClient
       .from('cleaning_tasks')
-      .upsert(tasksToUpsert as DbCleaningTask[], { // Aserción de tipo para DbCleaningTask[]
-        onConflict: 'reservation_id,task_type,scheduled_date', // Usa tu UNIQUE constraint
+      .upsert(tasksToUpsert as DbCleaningTask[], {
+        onConflict: 'reservation_id,task_type_id,scheduled_date',
         ignoreDuplicates: false
       });
 

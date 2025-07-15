@@ -18,6 +18,9 @@ type CleaningTaskWithProperty = CleaningTask & {
     short_address: string | null;
     client_property_nickname: string | null;
   };
+  task_types: {
+    name: string | null;
+  } | null;
 };
 
 type SupabaseAuthUser = {
@@ -40,7 +43,7 @@ export default function AllTasksPage() {
   const [showDrawer, setShowDrawer] = useState(false);
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => (
-      task.task_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.task_types?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.notes?.toLowerCase().includes(searchTerm.toLowerCase())
     ));
   }, [tasks, searchTerm]);
@@ -68,7 +71,7 @@ export default function AllTasksPage() {
 
     const { data, error } = await supabase
         .from('cleaning_tasks')
-        .select('*, properties(short_address, client_property_nickname)')
+        .select('*, properties(short_address, client_property_nickname), task_types(name)')
         .eq('platform_user_id', userData.user.id)
         .order('scheduled_date', { ascending: false });
 
@@ -135,6 +138,7 @@ export default function AllTasksPage() {
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cleaner</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
@@ -157,10 +161,45 @@ export default function AllTasksPage() {
                   <td className="px-4 py-2 text-sm text-gray-700">
                    {task.properties?.client_property_nickname || task.properties?.short_address || '—'}
                   </td>
-                  <td className="px-4 py-2 text-sm text-gray-700">{task.task_type}</td>
+                  <td className="px-4 py-2 text-sm text-gray-700">{task.task_types?.name || '—'}</td>
                   <td className="px-4 py-2 text-sm text-gray-700">{task.priority_tag || '—'}</td>
                   <td className="px-4 py-2 text-sm text-gray-700">{task.status}</td>
                   <td className="px-4 py-2 text-sm text-gray-700">{task.assigned_cleaner_names || '—'}</td>
+                  <td className="px-4 py-2 text-sm text-gray-700">
+                    {task.status !== 'Completed' ? (
+                      <button
+                        onClick={async () => {
+                          console.log('Marking task as complete', task.id);
+                          const { error } = await supabase
+                            .from('cleaning_tasks')
+                            .update({
+                              status: 'Completed',
+                              completed_on: new Date().toISOString(),
+                              completed_by: user?.id || null,
+                            })
+                            .eq('id', task.id);
+
+                          if (!error) {
+                            setTasks((prev) =>
+                              prev.map((t) =>
+                                t.id === task.id
+                                  ? { ...t, status: 'Completed', completed_on: new Date().toISOString(), completed_by: user?.id || null }
+                                  : t
+                              )
+                            );
+                          } else {
+                            console.error('Error marking task as completed:', error.message);
+                            alert('Could not mark task as completed');
+                          }
+                        }}
+                        className="text-green-600 hover:underline"
+                      >
+                        Mark Complete
+                      </button>
+                    ) : (
+                      <span className="text-gray-400 italic">Completed</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -176,7 +215,7 @@ export default function AllTasksPage() {
               setShowDrawer(false);
               const { data } = await supabase
                 .from('cleaning_tasks')
-                .select('*, properties(short_address, client_property_nickname)')
+                .select('*, properties(short_address, client_property_nickname), task_types(name)')
                 .eq('platform_user_id', user!.id)
                 .order('scheduled_date', { ascending: false });
 

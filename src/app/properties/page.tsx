@@ -7,16 +7,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import type { Database, Tables } from 'types/supabase'
-
 import DashboardLayout from '../../components/DashboardLayout';
-// We won't use PropertyDetailPanel directly here, as clicking will navigate to a new page.
-// import PropertyDetailPanel from '@/components/PropertyDetailPanel'; // Not needed here
+import PropertyDetailPanel from '@/components/PropertyDetailPanel';
+import { Info } from 'lucide-react';
+import type { PropertyWithClient } from '@/generated-types/customTypes';
 
 const supabase = createClientComponentClient<Database>()
-
-type PropertyWithClient = Tables<'properties'> & {
-  clients: Pick<Tables<'clients'>, 'display_name'> | null;
-};
 
 export default function PropertiesPage() {
   const [user, setUser] = useState<User | null>(null)
@@ -25,6 +21,7 @@ export default function PropertiesPage() {
   const [filter, setFilter] = useState<'active' | 'all'>('active');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPropertiesForBulk, setSelectedPropertiesForBulk] = useState<number[]>([]); // For checkboxes
+  const [selectedProperty, setSelectedProperty] = useState<PropertyWithClient | null>(null);
   const router = useRouter()
   const [syncingAll, setSyncingAll] = useState(false);
 
@@ -42,20 +39,26 @@ export default function PropertiesPage() {
 
       let query = supabase
         .from('properties')
-        .select('*, clients(display_name)') // Select all properties fields, and client display name
-        .eq('platform_user_id', userData.user.id) // Filter by the current user's ID
+        .select('*, clients(display_name), property_icals_property_id_fkey(url), cities(name), suburbs(name), property_service_types(name)')
+        .eq('platform_user_id', userData.user.id);
 
       if (filter === 'active') {
         query = query.eq('status', 'active');
       }
-
+      
       const { data: propertiesData, error: propertiesError } = await query;
+
+      // Rename manually
+      const renamedData = (propertiesData as any[]).map((p) => ({
+        ...p,
+        property_icals: p.property_icals_property_id_fkey,
+      }));
 
       if (propertiesError) {
         console.error('Error fetching properties:', propertiesError);
         alert('Failed to load properties: ' + propertiesError.message);
       } else {
-        const sortedProperties = (propertiesData as PropertyWithClient[]).sort((a, b) => {
+        const sortedProperties = (renamedData as PropertyWithClient[]).sort((a, b) => {
             const clientA = a.clients?.display_name || '';
             const clientB = b.clients?.display_name || '';
             return clientA.localeCompare(clientB);
@@ -82,7 +85,7 @@ export default function PropertiesPage() {
 
   // Filter properties based on the search term (applied to the already fetched and sorted list)
   const filteredProperties = properties.filter(property => {
-    const searchContent = `${property.clients?.display_name || ''} ${property.client_property_nickname || ''} ${property.short_address || ''} ${property.status || ''} ${property.city || ''} ${property.suburb || ''} ${property.service_type || ''}`.toLowerCase();
+    const searchContent = `${property.clients?.display_name || ''} ${property.client_property_nickname || ''} ${property.short_address || ''} ${property.status || ''} ${property.cities?.name || ''} ${property.suburbs?.name || ''} ${property.property_service_types?.name || ''}`.toLowerCase();
     return searchContent.includes(searchTerm.toLowerCase());
   });
 
@@ -109,6 +112,12 @@ export default function PropertiesPage() {
 
   return (
     <DashboardLayout>
+      {selectedProperty && (
+        <PropertyDetailPanel
+          property={selectedProperty}
+          onClose={() => setSelectedProperty(null)}
+        />
+      )}
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-2xl font-bold">Manage Properties</h1>
         <button
@@ -118,17 +127,6 @@ export default function PropertiesPage() {
         >
           Create New Property
         </button>
-      </div>
-
-      {/* Quick Access Link - moved below the h1 */}
-      <div className="mb-6">
-        {/* @ts-ignore Deno doesn't recognize next/link as a JSX component */}
-        <Link
-          href="/properties/quick-access"
-          className="inline-block p-4 border border-gray-300 rounded-lg shadow-sm hover:shadow-md hover:border-blue-500 transition"
-        >
-          ⏩ Quick Access
-        </Link>
       </div>
     
       {/* Filter Buttons */}
@@ -234,7 +232,7 @@ export default function PropertiesPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-centre text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <input
                     type="checkbox"
                     className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
@@ -250,38 +248,38 @@ export default function PropertiesPage() {
                     // indeterminate={selectedPropertiesForBulk.length > 0 && selectedPropertiesForBulk.length < filteredProperties.length}
                   />
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-centre text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Property
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-centre text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-centre text-xs font-medium text-gray-500 uppercase tracking-wider">
                   City
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-centre text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Suburb
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-centre text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Service Type
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-centre text-xs font-medium text-gray-500 uppercase tracking-wider">
                   iCal Link
                 </th>
                 {/* Placeholder for Last Clean, Next Clean, Issues */}
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-centre text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Last Clean (TODO)
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-centre text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Next Clean (TODO)
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-centre text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Cleaning Issues (TODO)
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-centre text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Maintenance Issues (TODO)
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-centre text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Inspection Issues (TODO)
                 </th>
               </tr>
@@ -297,42 +295,63 @@ export default function PropertiesPage() {
                       onChange={() => handleCheckboxChange(property.id)}
                     />
                   </td>
-                  <td
-                    className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer"
-                    onClick={() => router.push(`/properties/${property.id}/calendar`)}
-                  >
-                    {property.clients?.display_name && (
-                      <span className="font-normal text-gray-800">
-                        {property.clients.display_name} -{' '}
+                  <td className="px-4 py-4 text-sm text-gray-700">
+                    <div className="flex items-center gap-2 w-full">
+                      <button
+                        onClick={() => setSelectedProperty(property)}
+                        className="text-gray-500 hover:text-blue-600"
+                        title="View details"
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+
+                      <span className="flex flex-wrap items-center gap-1 max-w-full">
+                        {property.clients?.display_name && (
+                          <span className="font-normal text-gray-800">
+                            {property.clients.display_name} -{' '}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => router.push(`/properties/${property.id}/calendar`)}
+                          className="font-bold text-blue-700 hover:underline focus:outline-none whitespace-nowrap"
+                        >
+                          {property.short_address}
+                        </button>
+                        {property.client_property_nickname && (
+                          <>
+                            <span className="text-gray-400 mx-1">-</span>
+                            <span className="font-normal text-gray-600">
+                              {property.client_property_nickname}
+                            </span>
+                          </>
+                        )}
                       </span>
-                    )}
-                    <span className="font-bold text-blue-700">
-                      {property.short_address}
-                    </span>
-                    {property.client_property_nickname && (
-                      <>
-                        <span className="text-gray-400 mx-1">-</span>
-                        <span className="font-normal text-gray-600">{property.client_property_nickname}</span>
-                      </>
-                    )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {property.status}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {property.city}
+                    {property.cities?.name || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {property.suburb}
+                    {property.suburbs?.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {property.service_type}
+                    {property.property_service_types?.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {property.ical ? (
-                        <a href={property.ical} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Link</a>
+                    {property.property_icals?.[0]?.url ? (
+                      <a
+                        href={property.property_icals[0].url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline"
+                      >
+                        Link
+                      </a>
                     ) : (
-                        'N/A'
+                      'N/A'
                     )}
                   </td>
                   {/* TODO: Add Last Clean, Next Clean, Cleaning Issues, etc. */}
