@@ -8,6 +8,13 @@ import type { Database } from 'types/supabase';
 import DashboardLayout from '../../components/DashboardLayout';
 import moment from 'moment';
 import { ChevronLeft, ChevronRight, RefreshCcw } from 'lucide-react';
+import type { PropertyWithClient } from '@/generated-types/customTypes';
+
+type Reservation = Database['public']['Tables']['reservations']['Row'];
+
+type TaskWithType = Database['public']['Tables']['cleaning_tasks']['Row'] & {
+  task_types: { name: string } | null;
+};
 
 const supabase = createClientComponentClient<Database>();
 const getBrisbaneDate = (dateString: string) => {
@@ -15,17 +22,16 @@ const getBrisbaneDate = (dateString: string) => {
 };
 
 export default function MultiViewPage() {
-  const [properties, setProperties] = useState<any[]>([]);
-  const [reservations, setReservations] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [properties, setProperties] = useState<PropertyWithClient[]>([]);
   const [search, setSearch] = useState('');
   const [currentStartDate, setCurrentStartDate] = useState(moment().subtract(1, 'day'));
-
   const currentEndDate = moment(currentStartDate).add(6, 'days');
   const dateRange = Array.from({ length: 7 }).map((_, i) => moment(currentStartDate).add(i, 'days'));
   const fetchStartDate = moment(currentStartDate).subtract(14, 'days').format('YYYY-MM-DD'); // 2 weeks before
   const fetchEndDate = moment(currentEndDate).add(2, 'months').format('YYYY-MM-DD'); // 2 months after
   const today = moment().format('YYYY-MM-DD');
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [tasks, setTasks] = useState<TaskWithType[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -35,7 +41,7 @@ export default function MultiViewPage() {
   const [{ data: props }, { data: res }, { data: tsk }] = await Promise.all([
     supabase
       .from('properties')
-      .select('*, clients(display_name), property_icals_property_id_fkey(url)')
+      .select('*, clients(display_name), property_icals(url), property_service_types(name), cities(name), suburbs(name)')
       .eq('platform_user_id', userData.user.id)
       .eq('status', 'active'),
     supabase
@@ -67,7 +73,7 @@ export default function MultiViewPage() {
     dateRange: dateRange.map(d => d.format())
   });
 
-  }, []);
+  }, [dateRange, fetchEndDate, fetchStartDate, properties, reservations]);
 
   const filteredProperties = properties.filter((p) => {
     const searchLower = search.toLowerCase();
@@ -144,8 +150,8 @@ export default function MultiViewPage() {
                   <tr key={prop.id} className="align-top">
                     <td className="p-3 border border-gray-300 text-sm font-medium whitespace-nowrap align-top w-56">
                       <div className={
-                        prop.property_icals_property_id_fkey?.length > 0 && 
-                        prop.property_icals_property_id_fkey[0]?.url
+                        prop.property_icals?.length > 0 && 
+                        prop.property_icals[0]?.url
                           ? ''
                           : 'bg-red-100 text-gray-800 p-1 rounded'
                       }>
@@ -235,9 +241,9 @@ export default function MultiViewPage() {
                           {/* Cleaning task (unchanged) */}
                           {taskToday && (
                             <div className="bg-yellow-100 text-yellow-800 rounded mt-1 px-1 py-0.5 text-[11px]">
-                              🧹 {(taskToday as any).task_types?.name === 'Clean'
+                              🧹 {taskToday.task_types?.name === 'Clean'
                                 ? `Clean – ${taskToday.priority_tag || 'N/A'}`
-                                : (taskToday as any).task_types?.name ?? 'Other'}
+                                : taskToday.task_types?.name ?? 'Other'}
                             </div>
                           )}
                         </td>

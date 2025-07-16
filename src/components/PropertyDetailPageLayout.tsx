@@ -77,7 +77,6 @@ export default function PropertyDetailPageLayout({
       {/* Compact Sidebar (replaces the wide one) */}
       <aside className="w-60 bg-white shadow-lg flex flex-col items-center py-4 border-r border-gray-200">
         {/* Back to Properties */}
-        {/* @ts-ignore Deno doesn't recognize next/link as a JSX component */}
         <Link 
           href="/properties"
           className="group relative p-2 mb-4 text-gray-500 hover:text-gray-700"
@@ -138,7 +137,6 @@ export default function PropertyDetailPageLayout({
           <ul className="space-y-2 mt-10">
             {navigationItems.map((item) => (
               <li key={item.name} className="flex justify-center">
-                {/* @ts-ignore Deno doesn't recognize next/link as a JSX component */}
                 <Link
                   href={item.href}
                   className={`group relative p-2 rounded-lg transition-colors duration-200 ${

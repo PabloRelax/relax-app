@@ -1,18 +1,21 @@
 // src/app/properties/page.tsx
 'use client'
 
-import Link from 'next/link'
 import { type User } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import type { Database, Tables } from 'types/supabase'
+import type { Database } from 'types/supabase'
 import DashboardLayout from '../../components/DashboardLayout';
 import PropertyDetailPanel from '@/components/PropertyDetailPanel';
 import { Info } from 'lucide-react';
 import type { PropertyWithClient } from '@/generated-types/customTypes';
 
 const supabase = createClientComponentClient<Database>()
+
+type PropertyFromDB = Omit<PropertyWithClient, 'property_icals'> & {
+  property_icals_property_id_fkey: { url: string }[];
+};
 
 export default function PropertiesPage() {
   const [user, setUser] = useState<User | null>(null)
@@ -49,7 +52,7 @@ export default function PropertiesPage() {
       const { data: propertiesData, error: propertiesError } = await query;
 
       // Rename manually
-      const renamedData = (propertiesData as any[]).map((p) => ({
+      const renamedData = (propertiesData as PropertyFromDB[]).map((p) => ({
         ...p,
         property_icals: p.property_icals_property_id_fkey,
       }));
@@ -70,7 +73,7 @@ export default function PropertiesPage() {
 
     loadUserAndProperties();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, _session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         setUser(null);
         router.push('/');
@@ -164,9 +167,13 @@ export default function PropertiesPage() {
                 console.log('✅ Sync results:', result.results);
                 alert(`Sync complete. See console for details.`);
               }
-            } catch (err: any) {
-              console.error('❌ Error syncing all iCals:', err.message);
-              alert('An error occurred during sync. See console.');
+            } catch (err) {
+              if (err instanceof Error) {
+                console.error('❌ Error syncing all iCals:', err.message);
+                alert('An error occurred during sync. See console.');
+              } else {
+                console.error('❌ Unknown error syncing all iCals:', err);
+              }
               setSyncingAll(false);
             }
           }}
@@ -223,9 +230,9 @@ export default function PropertiesPage() {
 
       {/* Conditional rendering based on filtered results */}
       {filteredProperties.length === 0 && searchTerm === '' ? (
-        <p className="text-gray-600">You haven't added any properties yet. Add one to get started!</p>
+        <p className="text-gray-600">You haven&apos;t added any properties yet...</p>
       ) : filteredProperties.length === 0 && searchTerm !== '' ? (
-        <p className="text-gray-600">No properties found matching "{searchTerm}".</p>
+        <p className="text-gray-600">No properties found matching &quot;{searchTerm}&quot;.</p>
       ) : (
         // Properties Table/List View
         <div className="overflow-x-auto bg-white rounded-lg shadow">

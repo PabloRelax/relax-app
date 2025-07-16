@@ -18,7 +18,6 @@ export default function CleanersPage() {
   const [cleaners, setCleaners] = useState<Cleaner[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'active' | 'all'>('active');
   const [selectedCleaners, setSelectedCleaners] = useState<number[]>([]);
   const router = useRouter();
@@ -30,8 +29,7 @@ export default function CleanersPage() {
         router.push('/');
         return;
       }
-      setUserId(userData.user.id);
-
+      
       let query = supabase
         .from('cleaners')
         .select('*')

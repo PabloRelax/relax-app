@@ -82,12 +82,12 @@ export default function ManageUsersPage() {
   const indexOfFirstUser = indexOfLastUser - USERS_PER_PAGE;
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
-
   const handleDeleteUser = async (userId: string) => {
     if (confirm('Are you sure you want to delete this user?')) {
       try {
-        // Add your delete logic here
-        // Example: await supabase.from('users').delete().eq('id', userId);
+        // TODO: Implement actual user deletion
+        // @ts-expect-error - 'users' table not in current Database type
+        await supabase.from('users').delete().eq('id', userId);
         fetchUsers(); // Refresh the list
       } catch (error) {
         console.error('Error deleting user:', error);

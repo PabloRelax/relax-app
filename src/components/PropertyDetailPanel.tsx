@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import type { Tables } from 'types/supabase';
 import type { PropertyWithClient } from '@/generated-types/customTypes';
 
 interface PropertyDetailPanelProps {
@@ -48,14 +47,14 @@ export default function PropertyDetailPanel({ property, onClose }: PropertyDetai
 
           // Defensive parsing
           let data;
-          try {
-            data = await response.json();
-          } catch (jsonError) {
-            const text = await response.text();
-            console.error('❌ Response is not valid JSON. Text content:', text);
-            alert('iCal sync failed: Response was not JSON. See console.');
-            continue;
-          }
+            try {
+              data = await response.json();
+            } catch {
+              const text = await response.text();
+              console.error('❌ Response is not valid JSON. Text content:', text);
+              alert('iCal sync failed: Response was not JSON. See console.');
+              continue;
+            }
 
           if (!response.ok) {
             console.error('❌ API returned error:', data.error);

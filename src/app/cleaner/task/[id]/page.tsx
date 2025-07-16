@@ -4,15 +4,18 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from 'types/supabase';
+import type { Database, Tables } from 'types/supabase';
 import moment from 'moment';
 
 const supabase = createClientComponentClient<Database>();
 
 export default function TaskDetailPage() {
   const { id } = useParams();
-  const [task, setTask] = useState<any>(null);
   const [starting, setStarting] = useState(false);
+  const [task, setTask] = useState<Tables<'cleaning_tasks'> & {
+    properties: Tables<'properties'>;
+    task_types: { name: string } | null;
+  } | null>(null);
 
     useEffect(() => {
     async function fetchTask() {

@@ -18,8 +18,6 @@ import CreateTaskDrawer from '../../../../components/CreateTaskDrawer';
 
 type Reservation  = Tables<'reservations'>;
 type CleaningTask = Tables<'cleaning_tasks'>;
-type TaskType = Tables<'task_types'>;
-
 type CalendarEvent = {
   id: string;
   title: string;
@@ -35,6 +33,9 @@ type CalendarEvent = {
   style?: React.CSSProperties;
   sortKey?: string;
   priority: number; // lower means higher visual priority
+};
+type CleaningTaskWithType = CleaningTask & {
+  task_types: { name: string | null } | null;
 };
 
 const localizer = momentLocalizer(moment);
@@ -67,14 +68,13 @@ export default function PropertyCalendarPage() {
   const [user, setUser] = useState<User | null>(null);
   const [property, setProperty] = useState<PropertyWithClient | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [cleaningTasks, setCleaningTasks] = useState<CleaningTask[]>([]);
+  const [cleaningTasks, setCleaningTasks] = useState<CleaningTaskWithType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<View>('month');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [showDrawer, setShowDrawer] = useState(false);
-  const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
-
+  
   useEffect(() => {
     async function loadCalendarData() {
       setLoading(true);
@@ -227,7 +227,7 @@ reservations.forEach(res => {
 });
 
     cleaningTasks.forEach(task => {
-      const taskTypeName = (task as any).task_types?.name ?? 'Other';
+      const taskTypeName = task.task_types?.name ?? 'Other';
 
       calendarEvents.push({
         id: `task-${task.id}`,

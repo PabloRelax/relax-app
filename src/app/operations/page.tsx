@@ -83,6 +83,12 @@ export default function OperationsPage() {
       setAllCleaners(data || []);
     }
 
+    async function fetchUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user ? { id: user.id } : null);
+    }
+    fetchUser();
+
     fetchTasks();
     fetchCleaners();
   }, []);

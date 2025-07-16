@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
 
 // Configuration constants
 const BATCH_SIZE = 20; // Process 20 properties at a time
@@ -100,16 +101,17 @@ export async function GET() {
       results: syncResults 
     });
 
-  } catch (err: any) {
-    console.error('Unexpected error:', err.message);
-    return NextResponse.json({ 
-      error: 'Unexpected error: ' + err.message 
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+    console.error('Unexpected error:', errorMessage);
+    return NextResponse.json({
+      error: 'Unexpected error: ' + errorMessage
     }, { status: 500 });
   }
 }
 
 // Helper functions
-async function getActiveICals(supabase: any, propertyId: number) {
+async function getActiveICals(supabase: SupabaseClient, propertyId: number) {
   const { data, error } = await supabase
     .from('property_icals')
     .select('url')
@@ -128,7 +130,7 @@ async function syncICal(propertyId: number, platformUserId: string, url: string,
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`
       },
-      body: JSON.stringify({ property_id: propertyId, platform_user_id: platformUserId })
+      body: JSON.stringify({ property_id: propertyId, platform_user_id: platformUserId, ical_url: url })
     });
 
     if (!syncRes.ok) {

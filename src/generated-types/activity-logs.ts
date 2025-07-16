@@ -11,5 +11,5 @@ export type ActivityLog = {
   created_by?: string | null;
   platform_user_id: string;
   visibility?: string | null;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 };

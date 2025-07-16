@@ -11,8 +11,6 @@ import type { TablesInsert } from 'types/supabase';
 
 type TaskType = Database['public']['Tables']['task_types']['Row'];
 
-const supabase = createClientComponentClient<Database>();
-
 interface CreateTaskDrawerProps {
   defaultProperty?: PropertyWithClient | null;
   allProperties?: PropertyWithClient[];
@@ -45,7 +43,7 @@ export default function CreateTaskDrawer({
       }
     }
     loadTaskTypes();
-  }, []);
+   }, [supabase]);
   
   const handleCreateTask = async () => {
     if (!property) {

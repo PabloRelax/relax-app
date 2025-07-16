@@ -18,7 +18,6 @@ export default function ClientsPage() {
   const [filter, setFilter] = useState<'active' | 'all'>('active');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
   const [selectedClients, setSelectedClients] = useState<number[]>([]);
   const router = useRouter();
 
@@ -29,7 +28,6 @@ export default function ClientsPage() {
         router.push('/');
         return;
         }
-        setUserId(userData.user.id);
 
         let query = supabase
         .from('clients')

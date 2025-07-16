@@ -6,14 +6,19 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from 'types/supabase';
 import Link from 'next/link';
 import moment from 'moment';
+import type { Tables } from 'types/supabase';
 
 const supabase = createClientComponentClient<Database>();
+type CleaningTaskWithJoins = Tables<'cleaning_tasks'> & {
+  properties: Pick<Tables<'properties'>, 'short_address' | 'client_property_nickname'> | null;
+  task_types: { name: string } | null;
+};
 
 export default function CleanerHomePage() {
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<CleaningTaskWithJoins[]>([]);
   const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
+      useEffect(() => {
     async function loadTasks() {
         setLoading(true);
 

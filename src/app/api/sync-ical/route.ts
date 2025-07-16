@@ -1,6 +1,5 @@
 // src/app/api/sync-ical/route.ts
 import supabase from '@/lib/supabase/server';
-import { cookies } from 'next/headers'; 
 import ical from 'ical.js';
 import { fetchAirbnbICal } from '@/lib/fetchAirbnbICal';
 
@@ -108,8 +107,8 @@ export async function POST(request: Request) {
             }
 
             if (bookingSource === 'Other' && summaryText) {
-              const sourceInSummaryMatch = summaryText.match(/\((.*?)\)/);
-              if (sourceInSummaryMatch && sourceInSummaryMatch[1]) {
+              const sourceInSummaryMatch = summaryText.match(/\((.*?)\)/) as RegExpMatchArray | null;
+              if (sourceInSummaryMatch?.[1]) {
                 bookingSource = sourceInSummaryMatch[1];
               }
             }
@@ -155,8 +154,9 @@ export async function POST(request: Request) {
               reservationsToInsert.push(reservationData);
             }
           }
-        } catch (error) {
-          console.error(`Error processing iCal ${ical_url} for property ${propId}:`, error);
+        } catch (error: unknown) {
+          const errMessage = error instanceof Error ? error.message : String(error);
+          console.error(`Error processing iCal ${ical_url} for property ${propId}:`, errMessage);
           continue;
         }
       }
@@ -221,12 +221,13 @@ export async function POST(request: Request) {
           syncedReservations: reservationsToInsert.length,
           ...taskData,
         });
-      } catch (error) {
-        console.error('Error during generate-cleaning-tasks call:', error);
+      } catch (error: unknown) {
+        const errMessage = error instanceof Error ? error.message : String(error);
+        console.error('Error during generate-cleaning-tasks call:', errMessage);
         return Response.json(
           {
             error: 'Reservations saved, but task generation failed',
-            details: error instanceof Error ? error.message : String(error),
+            details: errMessage,
           },
           { status: 500 }
         );
@@ -237,7 +238,7 @@ export async function POST(request: Request) {
       message: 'iCals synced for all active properties',
       syncedReservations: reservationsToInsert.length,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('iCal sync API error:', errorMessage);
     return Response.json({ error: 'iCal sync failed: ' + errorMessage }, { status: 500 });

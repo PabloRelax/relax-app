@@ -31,15 +31,11 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const router = useRouter();
-  const [isFlyoutOpen, setIsFlyoutOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push('/');
-  };
-  const toggleFlyout = () => {
-    setIsFlyoutOpen((prev) => !prev);
   };
   const [wasClicked, setWasClicked] = useState(false);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -116,7 +112,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <ul className="space-y-8 mt-10">
               {navItems.map((item) => (
                 <li key={item.name} className="flex justify-center">
-                  {/* @ts-ignore Deno doesn't recognize next/link as a JSX component */}
                   <Link
                     href={item.href}
                     className="group relative text-blue-600 hover:text-blue-400 transition-colors"

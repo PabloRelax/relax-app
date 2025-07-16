@@ -39,7 +39,6 @@ export default function AllTasksPage() {
   const headerCheckboxRef = useRef<HTMLInputElement | null>(null);
   const [tasks, setTasks] = useState<CleaningTaskWithProperty[]>([]);
   const [properties, setProperties] = useState<PropertyWithClient[]>([]);
-  const [selectedProperty, setSelectedProperty] = useState<PropertyWithClient | null>(null);
   const [showDrawer, setShowDrawer] = useState(false);
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => (
@@ -47,8 +46,7 @@ export default function AllTasksPage() {
       task.notes?.toLowerCase().includes(searchTerm.toLowerCase())
     ));
   }, [tasks, searchTerm]);
-
-
+  const selectedProperty = null;
 
   useEffect(() => {
     async function fetchUserAndTasks() {
@@ -59,7 +57,7 @@ export default function AllTasksPage() {
       }
       setUser(userData.user);
       
-    const { data: propertyList, error: propertyError } = await supabase
+    const { data: propertyList } = await supabase
       .from('properties')
       .select('*, clients(display_name)')
       .eq('platform_user_id', userData.user.id)
