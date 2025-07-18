@@ -1,13 +1,19 @@
-// src\app\api\property\[id]\has-ical\route.ts
+// src/app/api/property/[id]/has-ical/route.ts
 
-import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { NextResponse, type NextRequest } from 'next/server';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from 'types/supabase';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
+  const { id } = context.params;
+  const propertyId = Number(id);
+
   const cookieStore = cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-  const propertyId = Number(params.id);
+  const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
 
   if (isNaN(propertyId)) {
     return NextResponse.json({ error: 'Invalid property ID' }, { status: 400 });
