@@ -1,4 +1,11 @@
 // src/types/activity-log.ts
+export type Json = 
+  | string 
+  | number 
+  | boolean 
+  | null 
+  | { [key: string]: Json | undefined } 
+  | Json[];
 
 export type ActivityLog = {
   id: number;
@@ -11,5 +18,5 @@ export type ActivityLog = {
   created_by?: string | null;
   platform_user_id: string;
   visibility?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: Json | null;  // Changed to match Supabase's type
 };
