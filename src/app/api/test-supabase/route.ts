@@ -1,20 +1,23 @@
-// app/api/test-supabase/route.ts
-import supabaseServer from '@/lib/supabase/server'
+// src/app/api/test-supabase/route.ts
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
-    // Use the client directly (no function call needed)
-    const { data, error } = await supabaseServer
+    // Await the result of the Supabase client
+    const supabase = await getSupabaseServerClient();
+
+    // Now you can call the 'from' method on the Supabase client
+    const { data, error } = await supabase
       .from('reservations')
       .select('*')
-      .limit(1)
+      .limit(1);
 
-    if (error) throw error
-    return Response.json({ success: true, data })
+    if (error) throw error;
+    return Response.json({ success: true, data });
   } catch (error) {
-    return Response.json({ 
+    return Response.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }, { status: 500 });
   }
 }

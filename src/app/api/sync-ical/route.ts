@@ -1,5 +1,5 @@
 // src/app/api/sync-ical/route.ts
-import supabase from '@/lib/supabase/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import ical from 'ical.js';
 import { fetchAirbnbICal } from '@/lib/fetchAirbnbICal';
 
@@ -44,7 +44,11 @@ export async function POST(request: Request) {
       notes: string;
     }[] = [];
 
+    const supabase = await getSupabaseServerClient();  // Await the Supabase client
+
     for (const { id: propId } of propertiesToSync) {
+
+      // Use the client to query the property_icals table
       const { data: icals, error: icalsError } = await supabase
         .from('property_icals')
         .select('url, platform') 
@@ -66,6 +70,7 @@ export async function POST(request: Request) {
         .from('reservations')
         .select('reservation_uid')
         .eq('property_id', propId);
+
 
       if (!fetchExistingError && existingReservations) {
         existingReservations.forEach(res => {
