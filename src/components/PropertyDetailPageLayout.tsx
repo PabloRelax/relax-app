@@ -8,8 +8,7 @@ import {
 import type { PropertyWithClient } from 'src/generated-types/customTypes';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from 'types/supabase';
+import supabase from '@/lib/supabase/client';
 
 interface PropertyDetailPageLayoutProps {
   children: React.ReactNode;
@@ -30,7 +29,6 @@ export default function PropertyDetailPageLayout({
   navigationItems  
 }: PropertyDetailPageLayoutProps) {
   const pathname = usePathname();
-  const supabase = createClientComponentClient<Database>();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<PropertyWithClient[]>([]);
   const router = useRouter();

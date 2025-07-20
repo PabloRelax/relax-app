@@ -1,35 +1,52 @@
-// src/app/api/property/[id]/has-ical/route.ts
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import type { Database } from 'types/supabase';
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
-): Promise<NextResponse> {
-  const { id } = params;
-  const propertyId = Number(id);
+) {
+  try {
+    const propertyId = Number(params.id);
+    if (isNaN(propertyId)) {
+      return NextResponse.json({ error: 'Invalid property ID' }, { status: 400 });
+    }
 
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
+    // Properly await the cookies() function
+    const cookieStore = await cookies();
+    
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options) {
+            cookieStore.set({ name, value, ...options });
+          },
+          remove(name: string, options) {
+            cookieStore.set({ name, value: '', ...options });
+          },
+        },
+      }
+    );
 
-  if (isNaN(propertyId)) {
-    return NextResponse.json({ error: 'Invalid property ID' }, { status: 400 });
+    const { data, error } = await supabase
+      .from('property_icals')
+      .select('id')
+      .eq('property_id', propertyId as never)
+      .eq('active', true as never)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    return NextResponse.json({ hasIcal: !!data });
+  } catch (error) {
+    console.error('API Error:', error);
+    return NextResponse.json({ error: 'Database operation failed' }, { status: 500 });
   }
-
-  const { data, error } = await supabase
-    .from('property_icals')
-    .select('id')
-    .eq('property_id', propertyId)
-    .eq('active', true)
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    console.error('Supabase query error:', error);
-    return NextResponse.json({ error: 'Database error', details: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ hasIcal: !!data });
 }

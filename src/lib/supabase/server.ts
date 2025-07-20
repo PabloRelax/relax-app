@@ -1,10 +1,19 @@
-// lib/supabase/server.ts
-import { createClient } from '@supabase/supabase-js'
+// src/lib/supabase/server.ts
+import { createServerClient } from '@supabase/ssr';
+import { cookies as getCookies } from 'next/headers';
 
-// Create and export the client instance directly
-const supabaseServerClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+export async function getSupabaseServerClient() {
+  const cookieStore = await getCookies(); // ✅ usar await aquí
 
-export default supabaseServerClient
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        get: (key) => cookieStore.get(key)?.value,
+        set() {}, // no-op
+        remove() {}, // no-op
+      },
+    }
+  );
+}

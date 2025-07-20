@@ -3,14 +3,12 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from 'types/supabase';
 import DashboardLayout from '../../components/DashboardLayout';
 import type { PropertyWithClient } from '../../generated-types/customTypes.js';
 import CreateTaskDrawer from '../../components/CreateTaskDrawer';
+import supabase from '@/lib/supabase/client';
 
-
-const supabase = createClientComponentClient<Database>();
 type CleaningTask = Database['public']['Tables']['cleaning_tasks']['Row'];
 
 type CleaningTaskWithProperty = CleaningTask & {
@@ -50,8 +48,9 @@ export default function AllTasksPage() {
 
   useEffect(() => {
     async function fetchUserAndTasks() {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !userData?.user) {
         router.push('/');
         return;
       }

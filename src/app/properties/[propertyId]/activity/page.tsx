@@ -2,8 +2,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from 'types/supabase';
+import supabase from '@/lib/supabase/client';
 import PropertyDetailPageLayout from '../../../../components/PropertyDetailPageLayout'; // Update path as needed
 import DashboardLayout from '../../../../components/DashboardLayout'; // Import the layout component
 import type { PropertyWithClient } from 'src/generated-types/customTypes';
@@ -11,9 +10,6 @@ import { getPropertyNavigationItems } from '../../../../../supabase/functions/ut
 import type { ActivityLog } from '../../../../generated-types/activity-logs';
 import { convertLogsToCSV } from '../../../../../supabase/functions/utils/export';
 import { useState, useEffect, useRef } from 'react';
-
-
-const supabase = createClientComponentClient<Database>();
 
 async function addTestActivityLog() {
   const { error } = await supabase.from('task_activity_log').insert([
@@ -75,12 +71,12 @@ export default function PropertyDetailPage() {
       setLoading(true);
       setError(null);
 
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         router.push('/');
         return;
       }
-      setUser(userData.user);
+      setUser(user);
 
       if (!propertyId) {
         setError('Property ID is missing from URL.');
@@ -92,7 +88,7 @@ export default function PropertyDetailPage() {
         .from('properties')
         .select('*, clients(display_name)')
         .eq('id', Number(propertyId)) // Convert string to number
-        .eq('platform_user_id', userData.user.id)
+        .eq('platform_user_id', user.id)
         .single();
 
       if (fetchError) {

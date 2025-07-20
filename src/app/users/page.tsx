@@ -2,8 +2,7 @@
 'use client'
 
 import { useEffect, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from 'types/supabase';
+import supabase from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -15,8 +14,6 @@ import {
 } from '@/components/ui/pagination';
 import InviteUserModal from '@/components/InviteUserModal';
 import DashboardLayout from '@/components/DashboardLayout';
-
-const supabase = createClientComponentClient<Database>();
 
 type User = {
   user_id: string;
@@ -86,7 +83,6 @@ export default function ManageUsersPage() {
     if (confirm('Are you sure you want to delete this user?')) {
       try {
         // TODO: Implement actual user deletion
-        // @ts-expect-error - 'users' table not in current Database type
         await supabase.from('users').delete().eq('id', userId);
         fetchUsers(); // Refresh the list
       } catch (error) {

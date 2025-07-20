@@ -3,8 +3,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database, Tables } from 'types/supabase';
+import type { Tables } from 'types/supabase';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import type { User } from '@supabase/supabase-js';
@@ -15,6 +14,7 @@ import PropertyDetailPageLayout from '../../../../components/PropertyDetailPageL
 import type { PropertyWithClient } from 'src/generated-types/customTypes';
 import { getPropertyNavigationItems } from '../../../../../supabase/functions/utils/getPropertyNavigation';
 import CreateTaskDrawer from '../../../../components/CreateTaskDrawer';
+import supabase from '@/lib/supabase/client';
 
 type Reservation  = Tables<'reservations'>;
 type CleaningTask = Tables<'cleaning_tasks'>;
@@ -39,7 +39,6 @@ type CleaningTaskWithType = CleaningTask & {
 };
 
 const localizer = momentLocalizer(moment);
-const supabase  = createClientComponentClient<Database>();
 
 function CustomEvent({ event }: { event: CalendarEvent }) {
   const isLastDay = event.isLastDay;
@@ -80,12 +79,12 @@ export default function PropertyCalendarPage() {
       setLoading(true);
       setError(null);
 
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         router.push('/');
         return;
       }
-      setUser(userData.user);
+      setUser(user);
 
       if (!propertyId) {
         setError('Property ID is missing from URL.');
@@ -99,7 +98,7 @@ export default function PropertyCalendarPage() {
         .from('properties')
         .select('*, clients(display_name)')
         .eq('id', propertyIdNum)
-        .eq('platform_user_id', userData.user.id)
+        .eq('platform_user_id', user.id)
         .single();
 
       if (propertyError) {
@@ -114,7 +113,7 @@ export default function PropertyCalendarPage() {
         .from('reservations')
         .select('*')
         .eq('property_id', propertyIdNum)
-        .eq('platform_user_id', userData.user.id);
+        .eq('platform_user_id', user.id);
 
       if (resError) {
         console.error('Error fetching reservations:', resError);
@@ -128,7 +127,7 @@ export default function PropertyCalendarPage() {
         .from('cleaning_tasks')
         .select('*, task_types(name)')
         .eq('property_id', propertyIdNum)
-        .eq('platform_user_id', userData.user.id);
+        .eq('platform_user_id', user.id);
 
       if (tasksError) {
         console.error('Error fetching cleaning tasks:', tasksError);
@@ -149,6 +148,7 @@ export default function PropertyCalendarPage() {
         router.push('/');
       }
     });
+
     return () => { subscription?.unsubscribe(); };
   }, [propertyId, router]);
 

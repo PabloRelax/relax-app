@@ -2,13 +2,10 @@
 'use client'
 
 import { useEffect, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from 'types/supabase';
 import type { OperationsTask } from '@/generated-types/operations';
 import DashboardLayout from '@/components/DashboardLayout';
 import { PencilIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
-
-const supabase = createClientComponentClient<Database>();
+import supabase from '@/lib/supabase/client';
 
 export default function OperationsPage() {
   const [tasks, setTasks] = useState<OperationsTask[]>([]);

@@ -6,6 +6,7 @@ import { GeistSans } from 'geist/font/sans'; // Import from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'; // Import from 'geist/font/mono'
 import "./globals.css";
 import 'react-datepicker/dist/react-datepicker.css';
+import AuthProvider from "@/components/AuthProvider";
 
 // Assign GeistSans and GeistMono directly. They are already the font objects.
 // DO NOT call them as functions with {}
@@ -28,7 +29,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning={true}
       >
-        {children}
+       <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

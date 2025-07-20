@@ -5,9 +5,9 @@ import { useState, useEffect } from 'react';
 import type { PropertyWithClient } from '../generated-types/customTypes';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from 'types/supabase';
 import type { TablesInsert } from 'types/supabase';
+import supabase from '@/lib/supabase/client';
 
 type TaskType = Database['public']['Tables']['task_types']['Row'];
 
@@ -29,7 +29,6 @@ export default function CreateTaskDrawer({
   const [notes, setNotes] = useState('');
   const [priorityTag, setPriorityTag] = useState('Departure Clean');
   const showPropertySelector = true;
-  const supabase = createClientComponentClient<Database>();
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
   const [taskTypeId, setTaskTypeId] = useState<string | null>(null);
 
@@ -43,7 +42,7 @@ export default function CreateTaskDrawer({
       }
     }
     loadTaskTypes();
-   }, [supabase]);
+   }, []);
   
   const handleCreateTask = async () => {
     if (!property) {
@@ -56,14 +55,14 @@ export default function CreateTaskDrawer({
       return;
     }
     
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData?.user?.id;
-    if (!userId) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const userId = user?.id;
+    if (!userId || authError) {
       alert('User not authenticated.');
       return;
     }
 
-  const { error } = await supabase
+  const { error: insertError } = await supabase
     .from('cleaning_tasks')
     .insert<TablesInsert<'cleaning_tasks'>>([{
       platform_user_id: userId,
@@ -74,8 +73,8 @@ export default function CreateTaskDrawer({
       notes,
     }]);
 
-    if (error) {
-      console.error('Error creating task:', error);
+    if (insertError) {
+      console.error('Error creating task:', insertError);
       alert('Failed to create task.');
       return;
     }

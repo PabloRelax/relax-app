@@ -4,14 +4,11 @@
 import { type User } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import type { Database } from 'types/supabase'
+import supabase from '@/lib/supabase/client';
 import DashboardLayout from '../../components/DashboardLayout';
 import PropertyDetailPanel from '@/components/PropertyDetailPanel';
 import { Info } from 'lucide-react';
 import type { PropertyWithClient } from '@/generated-types/customTypes';
-
-const supabase = createClientComponentClient<Database>()
 
 type PropertyFromDB = Omit<PropertyWithClient, 'property_icals'> & {
   property_icals_property_id_fkey: { url: string }[];
@@ -31,19 +28,19 @@ export default function PropertiesPage() {
   useEffect(() => {
     async function loadUserAndProperties() {
       setLoading(true)
-      const { data: userData } = await supabase.auth.getUser()
+      const { data: { user } } = await supabase.auth.getUser();
 
-      if (!userData.user) {
+      if (!user) {
         router.push('/') // Redirect to homepage if no user logged in
         return
       }
 
-      setUser(userData.user)
+      setUser(user)
 
       let query = supabase
         .from('properties')
         .select('*, clients(display_name), property_icals_property_id_fkey(url), cities(name), suburbs(name), property_service_types(name)')
-        .eq('platform_user_id', userData.user.id);
+        .eq('platform_user_id', user.id);
 
       if (filter === 'active') {
         query = query.eq('status', 'active');

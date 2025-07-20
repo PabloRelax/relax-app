@@ -4,13 +4,11 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from 'types/supabase';
 import DashboardLayout from '../../components/DashboardLayout';
+import supabase from '@/lib/supabase/client';
 
 type Client = Database['public']['Tables']['clients']['Row'];
-
-const supabase = createClientComponentClient<Database>();
 
 export default function ClientsPage() {
   const headerCheckboxRef = useRef<HTMLInputElement | null>(null);
@@ -24,26 +22,28 @@ export default function ClientsPage() {
     useEffect(() => {
     async function fetchUserAndClients() {
         const { data: userData } = await supabase.auth.getUser();
-        if (!userData.user) {
+        const user = userData?.user;
+
+        if (!user) {
         router.push('/');
         return;
         }
 
         let query = supabase
-        .from('clients')
-        .select('*')
-        .eq('platform_user_id', userData.user.id);
+          .from('clients')
+          .select('*')
+          .eq('platform_user_id', user.id);
 
         if (filter === 'active') {
         query = query.eq('active', true);
         }
 
-        const { data, error } = await query.order('display_name', { ascending: true });
+        const { data: clientsData, error } = await query.order('display_name', { ascending: true });
 
         if (error) {
         console.error('Error fetching clients:', error.message);
         } else {
-        setClients(data || []);
+        setClients(clientsData || []);
         }
         setLoading(false);
     }

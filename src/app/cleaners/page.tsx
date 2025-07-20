@@ -1,17 +1,14 @@
+// C:\Users\Pablo\relax-app\src\app\cleaners\page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from 'types/supabase';
 import DashboardLayout from '../../components/DashboardLayout';
 import { useRef } from 'react';
-
+import supabase from '@/lib/supabase/client';
 
 type Cleaner = Database['public']['Tables']['cleaners']['Row'];
-
-const supabase = createClientComponentClient<Database>();
-
 
 export default function CleanersPage() {
   const headerCheckboxRef = useRef<HTMLInputElement | null>(null);  
@@ -24,16 +21,18 @@ export default function CleanersPage() {
 
   useEffect(() => {
     async function fetchUserAndCleaners() {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        router.push('/');
-        return;
+      const { data: { session }, error: userError } = await supabase.auth.getSession();
+      if (userError || !session || !session.user) {
+          console.error('No user found or auth error:', userError);
+          setLoading(false);
+          return;
       }
+      const user = session.user;
       
       let query = supabase
         .from('cleaners')
         .select('*')
-        .eq('platform_user_id', userData.user.id);
+        .eq('platform_user_id', user.id);
 
       if (filter === 'active') {
         query = query.eq('active', true);

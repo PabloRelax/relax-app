@@ -1,16 +1,13 @@
 // src/app/api/sync-ical-all/route.ts
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
+import supabase from '@/lib/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Configuration constants
 const BATCH_SIZE = 20; // Process 20 properties at a time
 const MAX_RETRIES = 2; // Retry failed syncs up to 2 times
 
 export async function GET() {
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
   
   try {
     // 1. Fetch only active properties with at least one active, non-null iCal

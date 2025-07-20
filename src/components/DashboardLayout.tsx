@@ -5,8 +5,7 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 <Link href="/dashboard">Dashboard</Link>
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from 'types/supabase';
+import supabase from '@/lib/supabase/client';
 import { Dialog } from '@headlessui/react';
 import { Cog6ToothIcon, UserCircleIcon, UsersIcon as GroupIcon } from '@heroicons/react/24/outline';
 import {
@@ -19,10 +18,6 @@ import {
   GiftIcon,
   CursorArrowRippleIcon
 } from '@heroicons/react/24/outline';
-
-
-
-const supabase = createClientComponentClient<Database>();
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

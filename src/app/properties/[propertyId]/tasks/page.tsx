@@ -2,8 +2,9 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import supabase from '@/lib/supabase/client';
 import type { Database } from 'types/supabase';
+import { User } from '@supabase/supabase-js';
 import PropertyDetailPageLayout from '../../../../components/PropertyDetailPageLayout';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { getPropertyNavigationItems } from '../../../../../supabase/functions/utils/getPropertyNavigation';
@@ -11,15 +12,11 @@ import { useState, useEffect, useRef } from 'react';
 import type { PropertyWithClient } from 'src/generated-types/customTypes';
 import CreateTaskDrawer from '../../../../components/CreateTaskDrawer';
 
-
 type CleaningTaskWithType = Database['public']['Tables']['cleaning_tasks']['Row'] & {
   task_types?: {
     name: string;
   } | null;
 };
-
-
-const supabase = createClientComponentClient<Database>();
 
 export function convertTasksToCSV(tasks: CleaningTaskWithType[]): string {
   const header = [
@@ -48,19 +45,12 @@ export function convertTasksToCSV(tasks: CleaningTaskWithType[]): string {
 
 export default function PropertyTasksPage() {
   const { propertyId } = useParams<{ propertyId: string }>();
-  const router = useRouter();
   const [property, setProperty] = useState<PropertyWithClient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<CleaningTaskWithType[]>([]);
-  type SupabaseAuthUser = {
-    id: string;
-    email?: string;
-    user_metadata?: Record<string, unknown>;
-    app_metadata?: Record<string, unknown>;
-    };
-
-  const [user, setUser] = useState<SupabaseAuthUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTaskIds, setSelectedTaskIds] = useState<number[]>([]);
   const headerCheckboxRef = useRef<HTMLInputElement | null>(null);
@@ -102,17 +92,18 @@ export default function PropertyTasksPage() {
   useEffect(() => {
     async function loadProperty() {
       const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
+      const user = userData?.user;
+      if (!user) {
         router.push('/');
         return;
       }
-      setUser(userData.user);
+      setUser(user);
 
       const { data, error } = await supabase
         .from('properties')
         .select('*, clients(display_name)')
         .eq('id', Number(propertyId))
-        .eq('platform_user_id', userData.user.id)
+        .eq('platform_user_id', user.id)
         .single();
 
       if (error) {

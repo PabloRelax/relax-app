@@ -2,13 +2,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from 'types/supabase';
+import supabase from '@/lib/supabase/client';
 import Link from 'next/link';
 import moment from 'moment';
 import type { Tables } from 'types/supabase';
 
-const supabase = createClientComponentClient<Database>();
 type CleaningTaskWithJoins = Tables<'cleaning_tasks'> & {
   properties: Pick<Tables<'properties'>, 'short_address' | 'client_property_nickname'> | null;
   task_types: { name: string } | null;
@@ -23,10 +21,15 @@ export default function CleanerHomePage() {
         setLoading(true);
 
         // Step 1: Get logged-in user
-        const {
-        data: { user },
-        error: userError,
-        } = await supabase.auth.getUser();
+        const { data: { session }, error: userError } = await supabase.auth.getSession();
+
+        if (userError || !session || !session.user) {
+          console.error('No user found or auth error:', userError);
+          setLoading(false);
+          return;
+        }
+
+        const user = session.user;
 
         if (userError || !user) {
         console.error('No user found or auth error:', userError);
