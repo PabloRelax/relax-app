@@ -3,12 +3,12 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from 'types/supabase';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request) {
   try {
-    const propertyId = Number(params.id);
+    // Extract propertyId from the URL path (e.g., /api/property/[id]/has-ical)
+    const url = new URL(request.url);
+    const propertyId = Number(url.pathname.split('/')[3]); // assuming the path is /property/[id]/has-ical
+
     if (isNaN(propertyId)) {
       return NextResponse.json({ error: 'Invalid property ID' }, { status: 400 });
     }
@@ -37,8 +37,8 @@ export async function GET(
     const { data, error } = await supabase
       .from('property_icals')
       .select('id')
-      .eq('property_id', propertyId as never)
-      .eq('active', true as never)
+      .eq('property_id', propertyId)
+      .eq('active', true)
       .limit(1)
       .maybeSingle();
 
