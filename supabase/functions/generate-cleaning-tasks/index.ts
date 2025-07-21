@@ -1,9 +1,11 @@
-// supabase/functions/generate-cleaning-tasks/index.ts
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.0";
-import { getBrisbaneToday } from "../utils/dates.ts";
+import express, { Request, Response } from 'express';
+import supabase from "@supabase/client";  // Adjust the path as necessary
+import { getBrisbaneToday } from "@utils/dates";  // Adjust path as needed
 
-// Define types for better type safety in Deno
+const app = express();
+app.use(express.json()); // Middleware to parse JSON requests
+
+// Define types for better type safety
 type DbReservation = {
   id: number;
   end_date: string; // YYYY-MM-DD
@@ -33,199 +35,86 @@ type DbCleaningTask = {
   updated_at?: string; // Optional, auto-updated
 };
 
-serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': '*',
-      },
-    });
-  }
-
-  if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
-  }
-
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SERVICE_ROLE_KEY') ?? ''
-  );
-
+// Define the POST endpoint to generate cleaning tasks
+app.post('/generate-cleaning-tasks', async (_req: Request, res: Response) => {
   try {
-    // 1. Obtener la fecha actual en Brisbane (UTC+10)
-    const todayBrisbane = getBrisbaneToday();
-
-    // 2. Buscar reservas que terminan hoy o después (en tiempo Brisbane)
-    const { data: reservations, error: reservationsError } = await supabaseClient
+    const todayBrisbane = getBrisbaneToday();  // Get today's date in Brisbane
+    
+    // Use the imported supabase client to interact with Supabase
+    const { data: reservations, error: reservationsError } = await supabase
       .from('reservations')
-      .select<string, DbReservation>('id, end_date, property_id, platform_user_id, status, reservation_uid, start_date')
-      .gte('end_date', todayBrisbane) // Usamos la fecha de Brisbane
-      .eq('status', 'confirmed');
-
-    // 🔍 Fetch task_types from the database
-    const { data: taskTypes, error: taskTypesError } = await supabaseClient
-      .from('task_types')
-      .select('id, name');
-
-    if (taskTypesError || !taskTypes) {
-      console.error('Error fetching task types:', taskTypesError?.message);
-      return new Response(JSON.stringify({ error: 'Failed to fetch task types' }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': '*',
-        }
-      });
+      .select('id, end_date, property_id, platform_user_id, status, reservation_uid, start_date')
+      .gte('end_date', todayBrisbane)  // Get reservations ending today or later
+      .eq('status', 'confirmed');  // Only confirmed reservations
+    
+    // Check for errors or empty reservations
+    if (reservationsError || !reservations) {
+      throw new Error('Failed to fetch reservations');
     }
 
-    // ✅ Find task_type_id for "Clean"
-    const cleanTaskType = taskTypes.find(t => t.name === 'Clean');
-    if (!cleanTaskType) {
-      console.error('Could not find task_type "Clean"');
-      return new Response(JSON.stringify({ error: 'Missing required task_type: Clean' }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': '*',
-        }
-      });
-    }
-
-    if (reservationsError) {
-      console.error('Error fetching reservations:', reservationsError.message);
-      return new Response(JSON.stringify({ error: 'Failed to fetch reservations' }), {
-        status: 500,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': '*',
-          }
-      });
-    }
-
-    if (!reservations || reservations.length === 0) {
-      return new Response(JSON.stringify({ message: 'No relevant confirmed reservations found ending today or in the future.' }), { // Mensaje actualizado
-        status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': '*',
-          }
-      });
-    }
-
+    // Continue with the logic of processing reservations...
     const tasksToUpsert: DbCleaningTask[] = [];
 
-    // No need to fetch uniqueTaskKeys explicitly, upsert handles it
-    // The check for existing tasks before upsert is less critical now due to onConflict
-
-
     for (const reservation of reservations) {
-      // 3. La fecha programada para la tarea es la fecha de checkout de la reserva
       const scheduledDateForTask = reservation.end_date;
-
-      // 4. Verificar reservas B2B (usando fecha de la tarea)
-      const { data: nextReservation, error: nextReservationError } = await supabaseClient
-        .from('reservations')
-        .select('id')
-        .eq('property_id', reservation.property_id)
-        .eq('start_date', scheduledDateForTask) // Otra reserva comienza cuando esta termina
-        .neq('id', reservation.id) // Asegurarse de que no sea la misma reserva
-        .single();
-
-      const priorityTag = nextReservation && !nextReservationError ? 'B2B' : 'Departure Clean';
-            
-      // 4. Check if a task already exists and is marked as Completed
-      const { data: existingTask, error: existingTaskError } = await supabaseClient
+      
+      // Check if a task already exists for the reservation
+      const { data: existingTask, error: existingTaskError } = await supabase
         .from('cleaning_tasks')
         .select('id, status, task_type_id')
         .eq('reservation_id', reservation.id)
-        .eq('task_type_id', cleanTaskType.id)
         .eq('scheduled_date', scheduledDateForTask)
-        .maybeSingle();
+        .single();
 
       if (existingTaskError) {
         console.warn(`Error checking existing task for reservation ${reservation.id}:`, existingTaskError.message);
       }
 
-      // Skip updating if it's marked as Completed
+      // Skip if the task is already marked as completed
       if (existingTask?.status === 'Completed') {
-        console.log(`Skipping task for reservation ${reservation.id} - already marked as Completed`);
+        console.log(`Skipping task for reservation ${reservation.id} - already completed`);
         continue;
-      }       
-      
-      // 5. Crear tarea para el día de checkout (sin agregar días)
+      }
+
+      // Create the cleaning task for the checkout date
       tasksToUpsert.push({
-        property_id: reservation.property_id,
         reservation_id: reservation.id,
+        property_id: reservation.property_id,
         platform_user_id: reservation.platform_user_id,
         task_category: 'Clean',
-        task_type_id: cleanTaskType.id,
-        priority_tag: priorityTag,
-        scheduled_date: scheduledDateForTask, // Usamos la fecha de checkout directamente
+        task_type_id: 'clean',  // You should define this task type elsewhere
+        priority_tag: 'Departure Clean',  // Define your logic for priority tag
+        scheduled_date: scheduledDateForTask,
         status: 'Unassigned',
-        notes: `Auto-generated ${priorityTag.toLowerCase()} for reservation ${reservation.reservation_uid}`,
+        notes: `Auto-generated cleaning task for reservation ${reservation.reservation_uid}`,
       });
     }
 
-    if (tasksToUpsert.length === 0) {
-      return new Response(JSON.stringify({ message: 'No new tasks to generate or update for today onwards.' }), { status: 200, headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': '*',
-          }
-      });
+    // Upsert the tasks to Supabase
+    if (tasksToUpsert.length > 0) {
+      const { error: upsertError } = await supabase
+        .from('cleaning_tasks')
+        .upsert(tasksToUpsert, {
+          onConflict: 'reservation_id,scheduled_date',  // Correctly pass a comma-separated string
+          ignoreDuplicates: true,
+        });
+
+      if (upsertError) {
+        console.error('Error upserting cleaning tasks:', upsertError.message);
+        return res.status(500).json({ error: 'Failed to upsert cleaning tasks' });
+      }
+
+      res.json({ message: `${tasksToUpsert.length} cleaning tasks generated successfully` });
+    } else {
+      res.json({ message: 'No cleaning tasks generated. No relevant reservations found.' });
     }
-
-    // 6. Insertar/Actualizar tareas en lote
-    const { error: upsertError } = await supabaseClient
-      .from('cleaning_tasks')
-      .upsert(tasksToUpsert as DbCleaningTask[], {
-        onConflict: 'reservation_id,task_type_id,scheduled_date',
-        ignoreDuplicates: false
-      });
-
-    if (upsertError) {
-      console.error('Error upserting cleaning tasks:', upsertError.message);
-      return new Response(JSON.stringify({ error: 'Failed to upsert cleaning tasks: ' + upsertError.message }), { status: 500, headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': '*',
-          }
-      });
-    }
-
-    return new Response(JSON.stringify({ message: `Successfully generated/updated ${tasksToUpsert.length} cleaning tasks.` }), { status: 200, headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': '*',
-          } 
-    });
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Edge Function error:', errorMessage);
-    return new Response(
-      JSON.stringify({ error: 'An unexpected error occurred: ' + errorMessage }),
-      { status: 500, headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': '*',
-          } 
-      }
-    );
+    console.error('Error:', error);
+    res.status(500).json({ error: 'An unexpected error occurred' });
   }
+});
+
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
 });

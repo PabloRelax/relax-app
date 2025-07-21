@@ -1,6 +1,6 @@
 // relax-app\supabase\functions\utils\export.ts
 
-import type { ActivityLog } from '@\generated-types\activity-logs';
+import type { ActivityLog } from "@/generated-types/activity-logs";
 
 export function convertLogsToCSV(logs: ActivityLog[]): string {
   const headers = ['ID', 'Type', 'Title', 'Details', 'Created At', 'Created By'];

@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",  // Use ESNext modules to support modern module system
+    "esModuleInterop": true,  // Enables interoperability between CommonJS and ES Modules
+    "target": "ES2020",  // Use ES2020 features (like `BigInt` and `Promise.allSettled`)
+    "moduleResolution": "node",  // Ensures correct module resolution for Node.js
+    "outDir": "./dist",  // Output compiled files to the 'dist' directory
+    "strict": true,  // Enable all strict type-checking options
+    "skipLibCheck": true,  // Skip type checking of declaration files for faster compilation
+    "forceConsistentCasingInFileNames": true,  // Ensures file names are case-sensitive in imports
+    "resolveJsonModule": true,  // Allow importing JSON files as modules (if needed)
+    "jsx": "react-jsx"  // Use the new JSX transform for React (if you're using React)
+  },
+  "ts-node": {
+    "esm": true,  // Enable ES Modules for ts-node
+    "experimentalSpecifierResolution": "node",  // Resolve module specifiers like Node.js
+    "require": ["tsconfig-paths/register"]  // Automatically handle custom paths if you use path mappings
+  },
+  "include": [
+    "src/**/*.ts",  // Include TypeScript files inside the 'src' folder (you can adjust the folder structure)
+    "**/*.ts"  // Also include all TypeScript files in the project
+  ],
+  "exclude": [
+    "node_modules",  // Exclude 'node_modules' from the TypeScript compilation
+    "dist"  // Exclude the output 'dist' folder
+  ]
+}

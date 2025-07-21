@@ -2,11 +2,13 @@
   "name": "relax-app",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "api": "cd my-local-api && set NODE_OPTIONS=--loader ts-node/esm&& node server.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
@@ -16,6 +18,8 @@
     "@supabase/supabase-js": "^2.52.0",
     "@types/moment": "^2.11.29",
     "@types/react-big-calendar": "^1.16.2",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
     "geist": "^1.4.2",
     "ical.js": "^2.1.0",
     "lucide-react": "^0.522.0",
@@ -30,13 +34,15 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20.19.0",
+    "@types/express": "^5.0.3",
+    "@types/node": "^20.19.9",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "supabase": "^2.24.3",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }
