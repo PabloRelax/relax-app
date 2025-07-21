@@ -18,30 +18,29 @@ type CleaningTaskWithType = Database['public']['Tables']['cleaning_tasks']['Row'
   } | null;
 };
 
-export function convertTasksToCSV(tasks: CleaningTaskWithType[]): string {
-  const header = [
-    'ID',
-    'Scheduled Date',
-    'Category',
-    'Type',
-    'Status',
-    'Cleaner',
-    'Coordinator',
-    'Notes',
-  ];
-  const rows = tasks.map((task) => [
-    task.id,
-    task.scheduled_date,
-    task.task_category,
-    task.task_types?.name || '',
-    task.status,
-    task.assigned_cleaner_names ?? '',
-    task.assigned_coordinator_name ?? '',
-    task.notes ?? '',
-  ]);
-  return [header, ...rows].map(row => row.join(',')).join('\n');
-}
-
+// export function convertTasksToCSV(tasks: CleaningTaskWithType[]): string {
+//  const header: string[] = [
+//    'ID',
+//    'Scheduled Date',
+//    'Category',
+//    'Type',
+//    'Status',
+//    'Cleaner',
+//    'Coordinator',
+//    'Notes',
+//  ];
+//  const rows: string[][] = tasks.map((task) => [
+//    task.id.toString(),
+//    task.scheduled_date,
+//    task.task_category || '',
+//    task.task_types?.name || '',
+//    task.status || '',
+//    task.assigned_cleaner_names || '',
+//    task.assigned_coordinator_name || '',
+//    task.notes || '',
+//  ]);
+//  return [header, ...rows].map(row => row.join(',')).join('\n');
+// }
 
 export default function PropertyTasksPage() {
   const { propertyId } = useParams<{ propertyId: string }>();
@@ -260,7 +259,7 @@ export default function PropertyTasksPage() {
         </div>
         </div>
 
-
+{/*
         {selectedTaskIds.length > 0 && (
         <button
             type="button"
@@ -282,7 +281,7 @@ export default function PropertyTasksPage() {
             Export to CSV
         </button>
         )}
-
+*/}
 
         <div className="mt-6 bg-white rounded-lg shadow-md overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">

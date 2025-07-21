@@ -1,36 +1,54 @@
-// src/app/api/property/[id]/icals/route.ts
-import { createServerClient } from '@supabase/ssr'; // Use @supabase/ssr
-import { cookies } from 'next/headers';
+// relax-app\src\app\api\property\[id]\icals\route.ts
 import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import type { Database } from 'types/supabase';
 
-export async function GET(req: Request, context: { params: { id: string } }) {
-  // Resolve the promise returned by cookies()
-  const cookieStore = await cookies();  // Await cookies() to resolve the promise
-  
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: cookieStore,
+export async function GET(request: Request) {
+  try {
+    // Use new NextRequest pattern for dynamic params
+    const url = new URL(request.url);
+    const propertyId = Number(url.pathname.split('/')[3]); // Extract id from URL (e.g., /property/[id]/has-ical)
+
+    if (isNaN(propertyId)) {
+      return NextResponse.json({ error: 'Invalid property ID' }, { status: 400 });
     }
-  );
-  
-  const propertyId = parseInt(context.params.id, 10);
 
-  if (isNaN(propertyId)) {
-    return NextResponse.json({ error: 'Invalid property ID' }, { status: 400 });
+    // Handle cookies asynchronously
+    const cookieStore = await cookies();
+    
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options) {
+            cookieStore.set({ name, value, ...options });
+          },
+          remove(name: string, options) {
+            cookieStore.set({ name, value: '', ...options });
+          },
+        },
+      }
+    );
+
+    // Query Supabase for the iCal data related to propertyId
+    const { data, error } = await supabase
+      .from('property_icals')
+      .select('id')
+      .eq('property_id', propertyId)
+      .eq('active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    return NextResponse.json({ hasIcal: !!data });
+  } catch (error) {
+    console.error('API Error:', error);
+    return NextResponse.json({ error: 'Database operation failed' }, { status: 500 });
   }
-
-  const { data, error } = await supabase
-    .from('property_icals')
-    .select('url, platform')
-    .eq('property_id', propertyId)
-    .eq('active', true);
-
-  if (error) {
-    console.error('Error fetching iCals:', error.message);
-    return NextResponse.json({ error: 'Failed to fetch iCal data' }, { status: 500 });
-  }
-
-  return NextResponse.json({ icals: data });
 }
