@@ -1,7 +1,3 @@
-// relax-app\.vscode\settings.json
-
 {
-  "deno.enable": false,
-  "deno.enablePaths": ["supabase/functions"],
-  "deno.unstable": true
+  "deno.enable": false
 }

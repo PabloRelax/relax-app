@@ -1,6 +1,8 @@
+import { config } from 'dotenv'
+config({ path: '.env.local' })  // explicitly load .env.local
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { getBrisbaneToday } from '@utils/dates';
+import { getBrisbaneToday } from '../supabase/functions/utils/dates.ts';
 
 const app = express();
 app.use(express.json());
@@ -57,3 +59,7 @@ app.post('/generate-cleaning-tasks', async (_, res) => {
 
 // Export Express handler
 export default app;
+
+app.listen(3000, () => {
+  console.log('🚀 Server running on http://localhost:3000');
+});

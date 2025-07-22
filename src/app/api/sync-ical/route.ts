@@ -1,5 +1,5 @@
 // src/app/api/sync-ical/route.ts
-import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import ical from 'ical.js';
 import { fetchAirbnbICal } from '@/lib/fetchAirbnbICal';
 
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       notes: string;
     }[] = [];
 
-    const supabase = await getSupabaseServerClient();  // Await the Supabase client
+    const supabase = await createSupabaseServerClient();  // Await the Supabase client
 
     for (const { id: propId } of propertiesToSync) {
 
