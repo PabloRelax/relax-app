@@ -1,10 +1,10 @@
 // src/app/api/test-supabase/route.ts
-import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
     // Await the result of the Supabase client
-    const supabase = await getSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
 
     // Now you can call the 'from' method on the Supabase client
     const { data, error } = await supabase
