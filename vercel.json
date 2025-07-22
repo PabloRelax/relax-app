@@ -2,12 +2,16 @@
   "version": 2,
   "functions": {
     "api/server.ts": {
-      "runtime": "@vercel/node@2"
+      "runtime": "@vercel/node@4.0.0"
     }
   },
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/api/server",
+      "dest": "/api/server.ts"
+    },
+    {
+      "src": "/api/server/(.*)",
       "dest": "/api/server.ts"
     }
   ],
