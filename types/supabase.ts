@@ -32,6 +32,73 @@ export type Database = {
         }
         Relationships: []
       }
+      checklist_items: {
+        Row: {
+          id: string
+          label: string
+          requires_photo: boolean | null
+          sort_order: number | null
+          template_id: string | null
+        }
+        Insert: {
+          id?: string
+          label: string
+          requires_photo?: boolean | null
+          sort_order?: number | null
+          template_id?: string | null
+        }
+        Update: {
+          id?: string
+          label?: string
+          requires_photo?: boolean | null
+          sort_order?: number | null
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          platform_user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          platform_user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          platform_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_templates_platform_user_id_fkey"
+            columns: ["platform_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       cities: {
         Row: {
           color_tag: string | null
@@ -192,14 +259,14 @@ export type Database = {
             columns: ["auth_user_id"]
             isOneToOne: true
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "cleaners_platform_user_id_fkey"
             columns: ["platform_user_id"]
             isOneToOne: false
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -210,6 +277,8 @@ export type Database = {
           gps_lat: number | null
           gps_lng: number | null
           id: number
+          item_id: string | null
+          item_type: string | null
           notes: string | null
           photo_taken_at: string | null
           photo_url: string
@@ -221,6 +290,8 @@ export type Database = {
           gps_lat?: number | null
           gps_lng?: number | null
           id?: number
+          item_id?: string | null
+          item_type?: string | null
           notes?: string | null
           photo_taken_at?: string | null
           photo_url: string
@@ -232,6 +303,8 @@ export type Database = {
           gps_lat?: number | null
           gps_lng?: number | null
           id?: number
+          item_id?: string | null
+          item_type?: string | null
           notes?: string | null
           photo_taken_at?: string | null
           photo_url?: string
@@ -449,14 +522,21 @@ export type Database = {
             columns: ["completed_by"]
             isOneToOne: false
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "cleaning_tasks_platform_user_id_fkey"
             columns: ["platform_user_id"]
             isOneToOne: false
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cleaning_tasks_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "operations_table_view"
+            referencedColumns: ["property_id"]
           },
           {
             foreignKeyName: "cleaning_tasks_property_id_fkey"
@@ -544,7 +624,7 @@ export type Database = {
             columns: ["platform_user_id"]
             isOneToOne: false
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -591,7 +671,6 @@ export type Database = {
           pool: boolean
           pool_towels: number | null
           property_hourly_rate: number
-          property_specifics: string | null
           property_specifics_link: string | null
           queen_beds: number | null
           queen_satin_top: number | null
@@ -652,7 +731,6 @@ export type Database = {
           pool?: boolean
           pool_towels?: number | null
           property_hourly_rate: number
-          property_specifics?: string | null
           property_specifics_link?: string | null
           queen_beds?: number | null
           queen_satin_top?: number | null
@@ -713,7 +791,6 @@ export type Database = {
           pool?: boolean
           pool_towels?: number | null
           property_hourly_rate?: number
-          property_specifics?: string | null
           property_specifics_link?: string | null
           queen_beds?: number | null
           queen_satin_top?: number | null
@@ -752,7 +829,7 @@ export type Database = {
             columns: ["platform_user_id"]
             isOneToOne: false
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "properties_service_type_id_fkey"
@@ -810,6 +887,13 @@ export type Database = {
             foreignKeyName: "property_icals_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
+            referencedRelation: "operations_table_view"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "property_icals_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
@@ -846,6 +930,45 @@ export type Database = {
             columns: ["platform_user_id"]
             isOneToOne: false
             referencedRelation: "users_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      property_specifics_items: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          property_id: number
+          requires_photo: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          property_id: number
+          requires_photo?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          property_id?: number
+          requires_photo?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_specifics_items_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "operations_table_view"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "property_specifics_items_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -905,7 +1028,14 @@ export type Database = {
             columns: ["platform_user_id"]
             isOneToOne: false
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "reservations_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "operations_table_view"
+            referencedColumns: ["property_id"]
           },
           {
             foreignKeyName: "reservations_property_id_fkey"
@@ -913,6 +1043,45 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      special_requirements_items: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          requires_photo: boolean | null
+          task_id: number
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          requires_photo?: boolean | null
+          task_id: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          requires_photo?: boolean | null
+          task_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_requirements_items_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "cleaning_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "special_requirements_items_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "operations_table_view"
+            referencedColumns: ["task_id"]
           },
         ]
       }
@@ -954,7 +1123,7 @@ export type Database = {
             columns: ["platform_user_id"]
             isOneToOne: false
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1033,14 +1202,14 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "task_activity_log_platform_user_id_fkey"
             columns: ["platform_user_id"]
             isOneToOne: false
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "task_activity_log_task_id_fkey"
@@ -1055,6 +1224,116 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "operations_table_view"
             referencedColumns: ["task_id"]
+          },
+        ]
+      }
+      task_checklist_log: {
+        Row: {
+          checklist_item_id: string | null
+          cleaner_id: number | null
+          completed_at: string | null
+          id: string
+          photo_url: string | null
+          platform_user_id: string
+          task_id: number | null
+        }
+        Insert: {
+          checklist_item_id?: string | null
+          cleaner_id?: number | null
+          completed_at?: string | null
+          id?: string
+          photo_url?: string | null
+          platform_user_id: string
+          task_id?: number | null
+        }
+        Update: {
+          checklist_item_id?: string | null
+          cleaner_id?: number | null
+          completed_at?: string | null
+          id?: string
+          photo_url?: string | null
+          platform_user_id?: string
+          task_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_checklist_log_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_checklist_log_cleaner_id_fkey"
+            columns: ["cleaner_id"]
+            isOneToOne: false
+            referencedRelation: "cleaners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_checklist_log_platform_user_id_fkey"
+            columns: ["platform_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "task_checklist_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "cleaning_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_checklist_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "operations_table_view"
+            referencedColumns: ["task_id"]
+          },
+        ]
+      }
+      task_checklist_progress: {
+        Row: {
+          checked: boolean
+          cleaner_id: number | null
+          created_at: string | null
+          id: number
+          item_id: string
+          item_type: string
+          task_id: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          checked?: boolean
+          cleaner_id?: number | null
+          created_at?: string | null
+          id?: number
+          item_id: string
+          item_type: string
+          task_id: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          checked?: boolean
+          cleaner_id?: number | null
+          created_at?: string | null
+          id?: number
+          item_id?: string
+          item_type?: string
+          task_id?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_checklist_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_view"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1089,39 +1368,70 @@ export type Database = {
             columns: ["platform_user_id"]
             isOneToOne: false
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
         ]
+      }
+      user_role_types: {
+        Row: {
+          id: string
+          is_default: boolean
+          name: string
+          permissions: Json | null
+          platform_user_id: string
+        }
+        Insert: {
+          id?: string
+          is_default?: boolean
+          name: string
+          permissions?: Json | null
+          platform_user_id: string
+        }
+        Update: {
+          id?: string
+          is_default?: boolean
+          name?: string
+          permissions?: Json | null
+          platform_user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
           created_at: string | null
           id: string
           platform_user_id: string
-          role: string
+          role_type_id: string
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           platform_user_id: string
-          role: string
+          role_type_id: string
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           platform_user_id?: string
-          role?: string
+          role_type_id?: string
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "user_roles_role_type_id_fkey"
+            columns: ["role_type_id"]
+            isOneToOne: false
+            referencedRelation: "user_role_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_roles_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1155,6 +1465,7 @@ export type Database = {
           coordinator_notes: string | null
           created_at: string | null
           finish_by: string | null
+          finished_at: string | null
           has_second_keyset: string | null
           hours_per_service: number | null
           inspection_issues: string | null
@@ -1167,7 +1478,7 @@ export type Database = {
           manual_notes: string | null
           photos_link: string | null
           priority_tag: string | null
-          property_specifics: string | null
+          property_id: number | null
           property_specifics_confirmed: boolean | null
           property_specifics_confirmed_at: string | null
           property_specifics_confirmed_by: string | null
@@ -1185,6 +1496,7 @@ export type Database = {
           special_request_confirmed_by: string | null
           start_after: string | null
           start_at: string | null
+          started_at: string | null
           status: string | null
           storage_name: string | null
           suburb_name: string | null
@@ -1226,7 +1538,7 @@ export type Database = {
             columns: ["completed_by"]
             isOneToOne: false
             referencedRelation: "users_view"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1234,10 +1546,21 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string | null
-          id: string | null
-          role: string | null
+          permissions: Json | null
+          platform_user_id: string | null
+          role_name: string | null
+          role_type_id: string | null
+          user_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_type_id_fkey"
+            columns: ["role_type_id"]
+            isOneToOne: false
+            referencedRelation: "user_role_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

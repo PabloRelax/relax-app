@@ -8,4 +8,9 @@ export type PropertyWithClient = Tables<'properties'> & {
   property_service_types: Pick<Tables<'property_service_types'>, 'name'> | null;
   cities: { name: string } | null;
   suburbs: { name: string } | null;
+  property_specifics_items?: {
+    id: string;
+    description: string;
+    requires_photo: boolean;
+  }[];
 };

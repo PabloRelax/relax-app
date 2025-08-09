@@ -1,4 +1,4 @@
-// supabase/functions/utils/dates.ts
+// relax-app\supabase\functions\utils\dates.ts
 
 /** Retorna la fecha de hoy en Brisbane como YYYY-MM-DD */
 export function getBrisbaneToday(): string {

@@ -1,7 +1,7 @@
 // src\components\InviteUserModal.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog } from '@headlessui/react'
 import  supabase  from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -14,15 +14,6 @@ interface InviteUserModalProps {
   onUserInvited: () => void
 }
 
-const ROLES = [
-  'admin',
-  'manager',
-  'cleaner',
-  'cleaner Manager',
-  'viewer',
-  'Client'
-]
-
 export default function InviteUserModal({
   isOpen,
   onClose,
@@ -32,6 +23,25 @@ export default function InviteUserModal({
   const [role, setRole] = useState('manager')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [availableRoles, setAvailableRoles] = useState<{ id: string; name: string }[]>([]);
+  // 👇 Load roles from Supabase
+  useEffect(() => {
+    const fetchRoles = async () => {
+      const { data, error } = await supabase
+        .from('user_role_types')
+        .select('id, name')
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching roles:', error);
+      } else {
+        setAvailableRoles(data);
+        if (data.length > 0 && !role) setRole(data[0].id); // default role
+      }
+    };
+
+    fetchRoles();
+  }, []);
 
   const handleInvite = async () => {
     setSending(true)
@@ -45,27 +55,38 @@ export default function InviteUserModal({
       return
     }
 
-    const { data, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(trimmedEmail)
+    const {
+      data: { user: currentUser },
+      error: sessionError
+    } = await supabase.auth.getUser();
 
-    if (inviteError || !data?.user) {
-      setError(inviteError?.message || 'Invitation failed')
-      setSending(false)
-      return
+    if (sessionError || !currentUser) {
+      setError('Unable to determine current platform user.');
+      setSending(false);
+      return;
     }
 
-    const { error: insertError } = await supabase.from('user_roles').insert({
-      user_id: data.user.id,
-      role,
-    })
+    const response = await fetch('/api/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: trimmedEmail,
+        role_type_id: role,
+        platform_user_id: currentUser.id,
+      }),
+    });
 
-    if (insertError) {
-      setError(insertError.message)
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('Invite failed:', result);
+      setError(result.error || 'Invite failed');
     } else {
       // Clear form, close modal, and refresh user list
-      setEmail('')
-      setRole('manager')
-      onClose()
-      onUserInvited?.()
+      setEmail('');
+      setRole('manager');
+      onClose();
+      onUserInvited?.();
     }
 
     setSending(false)
@@ -99,9 +120,9 @@ export default function InviteUserModal({
             onChange={(e) => setRole(e.target.value)}
             className="w-full border rounded px-2 py-2 text-sm"
           >
-            {ROLES.map((r) => (
-              <option key={r} value={r}>
-                {r}
+            {availableRoles.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
               </option>
             ))}
           </select>

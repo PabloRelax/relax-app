@@ -202,12 +202,25 @@ export default function PropertyDetailPanel({ property, onClose }: PropertyDetai
       <DetailRow label="Key Situation Cleaner" value={property.key_situation_cleaner} />
 
       {/* PROPERTY SPECIFICS Section (Conditionally displayed) */}
-      {isSectionNotEmpty([property.property_specifics, property.property_specifics_link, property.property_service_types?.name]) && (
+      {isSectionNotEmpty([property.property_specifics_link, property.property_service_types?.name]) && (
         <>
           <SectionTitle title="PROPERTY SPECIFICS" />
-          <DetailRow label="Specifics" value={property.property_specifics} />
           <DetailRow label="Specifics Link" value={property.property_specifics_link} />
           <DetailRow label="Service Type" value={property.property_service_types?.name || 'N/A'} />          
+        </>
+      )}
+
+      {property.property_specifics_items && property.property_specifics_items.length > 0 && (
+        <>
+          <SectionTitle title="Checklist Items" />
+          <ul className="list-disc pl-5 text-sm text-gray-700 mb-2">
+            {property.property_specifics_items.map((item) => (
+              <li key={item.id} className="mb-1">
+                {item.description}
+                {item.requires_photo && <span className="ml-2 text-xs text-blue-600 font-medium">(Photo required)</span>}
+              </li>
+            ))}
+          </ul>
         </>
       )}
 

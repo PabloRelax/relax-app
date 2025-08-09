@@ -33,6 +33,6 @@
     "**/*.tsx", 
     ".next/types/**/*.ts",
     "supabase/functions/**/*"  // Added supabase/functions directory to include
-, "my-local-api/server.js"  ],
-  "exclude": ["nodec_modules"]
+, "my-local-api/server.ts"  ],
+  "exclude": ["node_modules"]
 }

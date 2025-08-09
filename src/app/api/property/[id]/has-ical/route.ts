@@ -12,21 +12,18 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid property ID' }, { status: 400 });
     }
 
-    const cookieStore = await cookies(); // Await cookies() function
+    const cookieStore = await cookies();
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value; // Now using cookieStore correctly
-          },
-          set(name: string, value: string, options) {
-            cookieStore.set({ name, value, ...options });
-          },
-          remove(name: string, options) {
-            cookieStore.set({ name, value: '', ...options });
+          getAll: () => cookieStore.getAll().map((c) => ({ name: c.name, value: c.value })),
+          setAll: (cookiesToSet) => {
+            for (const cookie of cookiesToSet) {
+              cookieStore.set(cookie);
+            }
           },
         },
       }

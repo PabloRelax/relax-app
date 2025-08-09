@@ -61,5 +61,5 @@ app.post('/generate-cleaning-tasks', async (_, res) => {
 export default app;
 
 app.listen(3000, () => {
-  console.log('🚀 Server running on http://localhost:3000');
+  console.log(`🚀 Server running on ${process.env.NEXT_PUBLIC_SITE_URL}`);
 });

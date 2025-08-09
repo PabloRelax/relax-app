@@ -3,15 +3,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
-import type { Database, Tables } from 'types/supabase';
+import supabase from '@/lib/supabase/client';
+import type { Tables } from 'types/supabase';
 import moment from 'moment';
-
-const supabase = createBrowserClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 
 export default function TaskDetailPage() {
   const { id } = useParams();
@@ -27,13 +21,23 @@ export default function TaskDetailPage() {
         if (!taskId) return;
 
         const { data, error } = await supabase
-        .from('cleaning_tasks')
-        .select(`*, properties(*), task_types(name)`)
-        .eq('id', taskId)
-        .single();
+          .from('cleaning_tasks')
+          .select('*')
+          .eq('id', taskId)
+          .maybeSingle();
 
-        if (error) console.error(error);
-        else setTask(data);
+        console.log('🔍 Fetch without joins:', { data, error });
+
+        console.log('🔍 Basic fetch result:', { data, error });
+
+        if (error) {
+          console.error('❌ Failed to fetch task:', {
+            error,
+            taskId,
+            userId: (await supabase.auth.getUser()).data.user?.id,
+          });
+        }
+        else setTask(data as any); // temporarily silence the TS warning for debug
     }
 
     fetchTask();
@@ -44,10 +48,13 @@ export default function TaskDetailPage() {
 
       setStarting(true);
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('cleaning_tasks')
         .update({ started_at: new Date().toISOString() })
-        .eq('id', task.id);
+        .eq('id', task.id)
+        .select();
+
+      console.log('🛠️ Update result:', { data, error });
 
       if (error) {
         console.error('Failed to start task:', error);
@@ -139,6 +146,12 @@ export default function TaskDetailPage() {
           {starting ? 'Finishing...' : 'Complete Task'}
         </button>
       ) : null}
-    </div>
+            <button
+              className="w-full bg-gray-100 text-sm text-gray-800 py-2 rounded border mt-6"
+              onClick={() => window.location.href = '/cleaner/home'}
+            >
+              ⬅ Go back to dashboard
+            </button>
+    </div>    
   );
 }

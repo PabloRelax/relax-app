@@ -21,13 +21,16 @@ export default function CleanersPage() {
 
   useEffect(() => {
     async function fetchUserAndCleaners() {
-      const { data: { session }, error: userError } = await supabase.auth.getSession();
-      if (userError || !session || !session.user) {
-          console.error('No user found or auth error:', userError);
-          setLoading(false);
-          return;
+      const {
+        data: { user },
+        error: userError
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error('No user found or auth error:', userError);
+        setLoading(false);
+        return;
       }
-      const user = session.user;
       
       let query = supabase
         .from('cleaners')

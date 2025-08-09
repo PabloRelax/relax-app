@@ -14,7 +14,8 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open your browser at your local network IP (e.g. http://192.168.1.105:3000) to see the result.
+Make sure your phone or other device is connected to the same Wi-Fi network.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

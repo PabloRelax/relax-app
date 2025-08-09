@@ -2,6 +2,8 @@
 export interface OperationsTask {
   task_id: number;
   scheduled_date: string;
+  started_at: string | null;
+  finished_at: string | null;
   start_at: string | null;
   finish_by: string | null;
   status: string;

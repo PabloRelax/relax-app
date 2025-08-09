@@ -11,7 +11,12 @@ import { Info } from 'lucide-react';
 import type { PropertyWithClient } from '@/generated-types/customTypes';
 
 type PropertyFromDB = Omit<PropertyWithClient, 'property_icals'> & {
-  property_icals_property_id_fkey: { url: string }[];
+  property_icals: { url: string }[];
+  property_specifics_items: {
+    id: string;
+    description: string;
+    requires_photo: boolean;
+  }[];
 };
 
 export default function PropertiesPage() {
@@ -39,8 +44,15 @@ export default function PropertiesPage() {
 
       let query = supabase
         .from('properties')
-        .select('*, clients(display_name), property_icals_property_id_fkey(url), cities(name), suburbs(name), property_service_types(name)')
-        .eq('platform_user_id', user.id);
+        .select(`*, 
+          clients(display_name),
+          property_icals(url),
+          cities(name),
+          suburbs(name),
+          property_service_types(name),
+          property_specifics_items(id, description, requires_photo)
+        `)
+      .eq('platform_user_id', user.id);
 
       if (filter === 'active') {
         query = query.eq('status', 'active');
@@ -51,7 +63,8 @@ export default function PropertiesPage() {
       // Rename manually
       const renamedData = (propertiesData as PropertyFromDB[]).map((p) => ({
         ...p,
-        property_icals: p.property_icals_property_id_fkey,
+        property_icals: p.property_icals, // already correct
+        property_specifics_items: p.property_specifics_items, // already correct
       }));
 
       if (propertiesError) {
@@ -345,15 +358,21 @@ export default function PropertiesPage() {
                     {property.property_service_types?.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {property.property_icals?.[0]?.url ? (
-                      <a
-                        href={property.property_icals[0].url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline"
-                      >
-                        Link
-                      </a>
+                    {property.property_icals?.length > 0 ? (
+                      <div className="flex flex-col space-y-1">
+                        {property.property_icals.map((ical, index) => (
+                          <a
+                            key={index}
+                            href={ical.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:underline truncate max-w-xs"
+                            title={ical.url}
+                          >
+                            ICal Link {index + 1}
+                          </a>
+                        ))}
+                      </div>
                     ) : (
                       'N/A'
                     )}

@@ -1,7 +1,10 @@
 // src/app/api/sync-ical/route.ts
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+//import { createSupabaseServerClient } from '@/lib/supabase/server';
 import ical from 'ical.js';
 import { fetchAirbnbICal } from '@/lib/fetchAirbnbICal';
+import { supabaseService } from '@/lib/supabase/service';
+
+const supabase = supabaseService;
 
 function formatDateToYYYYMMDD(date: Date): string {
   const year = date.getFullYear();
@@ -43,8 +46,6 @@ export async function POST(request: Request) {
       status: string;
       notes: string;
     }[] = [];
-
-    const supabase = await createSupabaseServerClient();  // Await the Supabase client
 
     for (const { id: propId } of propertiesToSync) {
 
@@ -211,6 +212,8 @@ export async function POST(request: Request) {
     // If syncing a single property, trigger cleaning task generation
     if (property_id) {
       try {
+        console.log('👉 Starting task generation from /api/sync-ical');
+        
         const taskRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/generate-cleaning-tasks`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -219,7 +222,9 @@ export async function POST(request: Request) {
 
         const text = await taskRes.text();
         if (!taskRes.ok) throw new Error(text);
+        console.log('🧾 Task generation response status:', taskRes.status);
         const taskData = JSON.parse(text);
+        console.log('📦 Task generation response data:', taskData);
 
         return Response.json({
           message: 'iCal synced and cleaning tasks generated successfully',

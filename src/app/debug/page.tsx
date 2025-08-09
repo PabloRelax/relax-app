@@ -32,6 +32,12 @@ export default function DebugPage() {
   };
   const [multiViewEvents, setMultiViewEvents] = useState<MultiviewEvent[]>([]);
 
+  const [path, setPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPath(window.location.pathname);
+  }, []);
+
   // Listen for auth changes and fetch initial session
   useEffect(() => {
     if (!supabase?.auth) {
@@ -230,9 +236,8 @@ export default function DebugPage() {
             <strong>Environment:</strong> {process.env.NODE_ENV}
           </div>
             <div>
-              <strong>Current Path:</strong> 
-              {typeof window !== 'undefined' ? window.location.pathname : 'Not available during SSR'}
-          </div>
+              <strong>Current Path:</strong> {path || 'Loading...'}
+            </div>
         </div>
       </details>
     </div>

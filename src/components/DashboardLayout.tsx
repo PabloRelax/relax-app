@@ -99,7 +99,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, []);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-white">
       {/* Left Panel (Sidebar) */}
       <aside className="w-16 bg-gray-900 text-white shadow-lg flex flex-col justify-between items-center py-4">
         <div>

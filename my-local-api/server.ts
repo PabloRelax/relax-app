@@ -123,14 +123,21 @@ app.use((err: unknown, req: express.Request, res: express.Response, next: expres
 });
 
 // Server startup
-const PORT = process.env.PORT || 3001; // Different from Next.js port
+const PORT = process.env.PORT || 3001;
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
+
+if (!SITE_URL) {
+  throw new Error('❌ NEXT_PUBLIC_SITE_URL is not defined in .env');
+}
+
 app.listen(PORT, () => {
   console.log(`
   🚀 Cleaning Tasks API Started
   ----------------------------------
-  ➡️ Local:    http://localhost:${PORT}
-  ➡️ Health:   http://localhost:${PORT}/health
+  ➡️ Local:    ${SITE_URL}
+  ➡️ Health:   ${SITE_URL}/health
   ➡️ Timezone: Australia/Brisbane (${getBrisbaneToday()})
   ➡️ Supabase: Connected to ${supabaseUrl?.replace(/\.co.*$/, '.co')}
   `);
 });
+

@@ -1,3 +1,4 @@
+// relax-app\supabase\functions\generate-cleaning-tasks\index.ts
 import express, { Request, Response } from 'express';
 import supabase from "@supabase/client";  // Adjust the path as necessary
 import { getBrisbaneToday } from "@utils/dates";  // Adjust path as needed
@@ -116,5 +117,5 @@ app.post('/generate-cleaning-tasks', async (_req: Request, res: Response) => {
 });
 
 app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+  console.log(`Server running on ${process.env.NEXT_PUBLIC_SITE_URL}`);
 });

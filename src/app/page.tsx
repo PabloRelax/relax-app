@@ -15,6 +15,8 @@ export default function Home() {
   } | null>(null);
   const [loading, setLoading] = useState(true)
   const router = useRouter() // Initialize the router for navigation
+  const [resetSent, setResetSent] = useState(false);
+
 
   useEffect(() => {
     async function checkUserSession() {
@@ -26,7 +28,19 @@ export default function Home() {
       setLoading(false);
 
       if (session?.user) {
-        router.push('/operations');
+        const { data } = await supabase
+          .from('users_view') // or your role table
+          .select('role_name')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+
+        const role = data?.role_name;
+
+        if (role === 'cleaner') {
+          router.push('/cleaner/home');
+        } else {
+          router.push('/operations');
+        }
       }
     }
 
@@ -35,7 +49,22 @@ export default function Home() {
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setUser(session.user);
-        router.push('/operations');
+        const checkAndRedirect = async () => {
+          const { data } = await supabase
+            .from('users_view')
+            .select('role_name')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+          const role = data?.role_name;
+
+          if (role === 'cleaner') {
+            router.push('/cleaner/home');
+          } else {
+            router.push('/operations');
+          }
+        };
+        checkAndRedirect();
       } else {
         setUser(null);
       }
@@ -57,7 +86,7 @@ export default function Home() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: 'http://localhost:3000/api/auth/callback',
+        emailRedirectTo: '${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback',
       },
     });
 
@@ -65,6 +94,23 @@ export default function Home() {
       alert('Error sending magic link: ' + error.message);
     } else {
       alert('Magic link sent! Check your email.');
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!email) {
+      alert('Please enter your email first.');
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/reset-password`,
+    });
+
+    if (error) {
+      alert('Error sending reset email: ' + error.message);
+    } else {
+      setResetSent(true);
     }
   };
 
@@ -87,6 +133,17 @@ export default function Home() {
         >
           Send Magic Link
         </button>
+        <button
+          type="button"
+          onClick={handlePasswordReset}
+          className="text-sm text-blue-600 underline hover:text-blue-800"
+        >
+          Forgot your password?
+        </button>
+
+        {resetSent && (
+          <p className="text-green-600 text-sm mt-2">Reset link sent. Check your email.</p>
+        )}
       </div>
     </main>
   );

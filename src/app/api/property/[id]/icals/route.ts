@@ -1,4 +1,4 @@
-// relax-app\src\app\api\property\[id]\icals\route.ts
+// src/app/api/property/[id]/icals/route.ts
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -6,47 +6,40 @@ import type { Database } from 'types/supabase';
 
 export async function GET(request: Request) {
   try {
-    // Use new NextRequest pattern for dynamic params
     const url = new URL(request.url);
-    const propertyId = Number(url.pathname.split('/')[3]); // Extract id from URL (e.g., /property/[id]/has-ical)
+    const propertyId = Number(url.pathname.split('/')[3]);
+    console.log('🔍 propertyId:', propertyId);
 
     if (isNaN(propertyId)) {
       return NextResponse.json({ error: 'Invalid property ID' }, { status: 400 });
     }
 
-    // Handle cookies asynchronously
     const cookieStore = await cookies();
-    
+
     const supabase = createServerClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options) {
-            cookieStore.set({ name, value, ...options });
-          },
-          remove(name: string, options) {
-            cookieStore.set({ name, value: '', ...options });
+          getAll: () => cookieStore.getAll().map((c) => ({ name: c.name, value: c.value })),
+          setAll: (cookiesToSet) => {
+            for (const cookie of cookiesToSet) {
+              cookieStore.set(cookie);
+            }
           },
         },
       }
     );
 
-    // Query Supabase for the iCal data related to propertyId
     const { data, error } = await supabase
       .from('property_icals')
-      .select('id')
+      .select('id, url')
       .eq('property_id', propertyId)
-      .eq('active', true)
-      .limit(1)
-      .maybeSingle();
+      .eq('active', true);
 
     if (error) throw error;
 
-    return NextResponse.json({ hasIcal: !!data });
+    return NextResponse.json({ icals: data });
   } catch (error) {
     console.error('API Error:', error);
     return NextResponse.json({ error: 'Database operation failed' }, { status: 500 });

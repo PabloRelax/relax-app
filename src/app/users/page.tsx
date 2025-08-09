@@ -18,7 +18,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 type User = {
   user_id: string;
   email: string;
-  role: string;
+  role_name: string;
 };
 
 const USERS_PER_PAGE = 10;
@@ -37,20 +37,20 @@ export default function ManageUsersPage() {
     try {
       const { data: users, error } = await supabase
         .from('users_view')
-        .select('id, email, role, created_at')
+        .select('user_id, email, role_name')
         .order('created_at', { ascending: false });
 
       if (error) {
         throw error;
       }
 
-      const formattedUsers = users
-        .filter(user => user.id !== null)
-        .map(user => ({
-          user_id: user.id as string,
-          email: user.email || '—',
-          role: user.role || '—'
-        }));
+    const formattedUsers = users
+      .filter(user => !!user.user_id)
+      .map(user => ({
+        user_id: user.user_id as string,
+        email: user.email || '—',
+        role_name: user.role_name || '—',
+      }));
 
       setUsers(formattedUsers);
       setFilteredUsers(formattedUsers);
@@ -68,7 +68,7 @@ export default function ManageUsersPage() {
   useEffect(() => {
     const filtered = users.filter(user => 
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchTerm.toLowerCase())
+      user.role_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredUsers(filtered);
     setCurrentPage(1); // Reset to first page when searching
@@ -135,7 +135,7 @@ export default function ManageUsersPage() {
                   {currentUsers.map((user) => (
                     <tr key={user.user_id}>
                       <td className="px-4 py-2 text-sm text-gray-800">{user.email}</td>
-                      <td className="px-4 py-2 text-sm text-gray-800">{user.role}</td>
+                      <td className="px-4 py-2 text-sm text-gray-800">{user.role_name}</td>
                       <td className="px-4 py-2 text-sm text-gray-800 space-x-2">
                         <Button variant="ghost" size="sm" className="text-blue-600">
                           Edit
